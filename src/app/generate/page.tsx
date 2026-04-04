@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Sparkles, Share2, ChevronRight, Lightbulb, ArrowRight, BookOpen, HelpCircle, Layers, X, CheckCircle, RefreshCw, Wand2 } from 'lucide-react';
+import { Camera, Sparkles, Share2, ChevronRight, Lightbulb, ArrowRight, BookOpen, HelpCircle, Layers, X, CheckCircle, RefreshCw, Wand2, Aperture } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { useGamification } from '../hooks/useGamification';
 
@@ -26,14 +26,6 @@ interface QuizQuestion {
 
 type View = 'home' | 'mode' | 'quiz' | 'result';
 type Mode = 'explain' | 'teach' | 'quiz' | 'deeper';
-
-const EXAMPLE_SUBJECTS = [
-  { label: 'a fire hydrant', emoji: '🚒' },
-  { label: 'an elevator', emoji: '🏢' },
-  { label: 'a barcode', emoji: '📊' },
-  { label: 'gravity', emoji: '🌍' },
-  { label: 'a traffic light', emoji: '🚦' },
-];
 
 function ShareCard({ result, item }: { result: LessonPlan; item: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -140,15 +132,11 @@ export default function GeneratePage() {
     setLoading(true);
     setLoadingMessage('Finding clarity...');
     setView('result');
-    
     try {
       const response = await fetch('/api/generate-lesson', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          item: capturedSubject, 
-          depth: mode === 'deeper' ? 'deep' : mode === 'teach' ? 'standard' : 'quick' 
-        }),
+        body: JSON.stringify({ item: capturedSubject, depth: mode === 'deeper' ? 'deep' : mode === 'teach' ? 'standard' : 'quick' }),
       });
       if (!response.ok) throw new Error('Generation failed');
       const data = await response.json();
@@ -172,7 +160,6 @@ export default function GeneratePage() {
   const loadQuiz = useCallback(async () => {
     setLoading(true);
     setLoadingMessage('Creating quiz...');
-    
     try {
       const qResponse = await fetch('/api/generate-questions', {
         method: 'POST',
@@ -182,9 +169,7 @@ export default function GeneratePage() {
       if (!qResponse.ok) throw new Error('Questions failed');
       const qData = await qResponse.json();
       const questions = qData.questions.questions || [];
-      
       if (questions.length === 0) { loadLesson(); return; }
-      
       setQuizQuestions(questions);
       setView('quiz');
       setLoading(false);
@@ -199,9 +184,7 @@ export default function GeneratePage() {
     const newAnswered = new Set(answeredQuestions);
     newAnswered.add(index);
     setAnsweredQuestions(newAnswered);
-    if (newAnswered.size >= quizQuestions.length) {
-      setTimeout(() => loadLesson(), 1000);
-    }
+    if (newAnswered.size >= quizQuestions.length) setTimeout(() => loadLesson(), 1000);
   };
 
   const handleTryAnother = () => {
@@ -222,22 +205,39 @@ export default function GeneratePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-gray-900 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col relative overflow-hidden">
 
-      {/* Ambient background */}
+      {/* === HERO BACKGROUND === */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#FF6B35]/8 via-[#FFD700]/5 to-transparent -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[#00C896]/6 via-[#FFD700]/3 to-transparent translate-y-1/2 -translate-x-1/4" />
-        <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full bg-[#B866D6]/5 blur-3xl" />
+        {/* Main gradient — sky inspired */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#FFF8F0] via-white to-[#FFF5F0]" />
+        
+        {/* Large soft orbs */}
+        <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#FF6B35]/12 to-[#FFD700]/8 -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute top-1/3 -left-40 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-[#00C896]/8 via-[#FFD700]/5 to-transparent -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-gradient-to-tl from-[#B866D6]/6 to-transparent translate-y-1/3 -translate-x-1/4" />
+        
+        {/* Lens flare accent */}
+        <div className="absolute top-16 right-8 w-2 h-2 rounded-full bg-[#FF6B35]/60 shadow-[0_0_40px_10px_rgba(255,107,53,0.15)]" />
+        <div className="absolute top-24 right-16 w-1 h-1 rounded-full bg-[#FFD700]/80 shadow-[0_0_20px_5px_rgba(255,215,0,0.1)]" />
+        
+        {/* Subtle grid — camera viewfinder energy */}
+        <div className="absolute inset-0 opacity-[0.015]" style={{
+          backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
+          backgroundSize: '48px 48px'
+        }} />
       </div>
 
-      {/* HEADER */}
-      <header className="relative w-full px-5 py-4 flex items-center justify-between z-10">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-lg shadow-[#FF6B35]/20">
-            <Sparkles className="w-4 h-4 text-white" />
+      {/* === HEADER === */}
+      <header className="relative w-full px-6 py-5 flex items-center justify-between z-10">
+        <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-xl shadow-[#FF6B35]/20">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="text-gray-900 font-bold text-sm tracking-tight">Overstood</span>
+          <div>
+            <span className="text-gray-900 font-bold text-base tracking-tight">Overstood</span>
+            <p className="text-gray-400 text-[10px] font-medium -mt-0.5">Turn the world into a lesson</p>
+          </div>
         </motion.div>
       </header>
 
@@ -261,125 +261,152 @@ export default function GeneratePage() {
         )}
       </AnimatePresence>
 
-      {/* === HOME === */}
+      {/* === HOME — THE CAMERA HERO === */}
       <AnimatePresence mode="wait">
         {view === 'home' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative flex-1 flex flex-col z-10">
 
-            {/* Hero */}
-            <section className="w-full pt-12 pb-8 px-5">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="max-w-sm mx-auto text-center">
-                <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight leading-[1.1] mb-4">
-                  Understand
+            {/* Hero text */}
+            <section className="w-full px-6 pt-10 pb-6">
+              <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
+                <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 tracking-tight leading-[1.05] mb-3">
+                  Point your camera.
                   <br />
-                  <span className="bg-gradient-to-r from-[#FF6B35] to-[#FFD700] bg-clip-text text-transparent">what you see.</span>
+                  <span className="bg-gradient-to-r from-[#FF6B35] to-[#E8521A] bg-clip-text text-transparent">Learn instantly.</span>
                 </h1>
-                <p className="text-gray-500 text-base leading-relaxed max-w-xs mx-auto">
-                  Take a picture of anything and turn it into an explanation, lesson, or quiz.
+                <p className="text-gray-500 text-lg leading-relaxed max-w-sm">
+                  Snap anything in the world and turn it into a clear explanation, a real lesson, or a quick quiz.
                 </p>
               </motion.div>
             </section>
 
-            {/* Camera CTA */}
-            <section className="w-full px-5 pb-6">
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="max-w-sm mx-auto">
+            {/* === THE MAIN CAMERA ACTION — MASSIVE === */}
+            <section className="w-full px-6 pb-5">
+              <motion.div initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}>
                 
-                {/* Big camera button */}
+                {/* Primary camera card — huge and alive */}
                 <motion.button
                   onClick={() => fileInputRef.current?.click()}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FF6B35] via-[#FF8C5A] to-[#FFD700] p-10 flex flex-col items-center justify-center shadow-2xl shadow-[#FF6B35]/30"
+                  whileHover={{ scale: 1.015 }}
+                  whileTap={{ scale: 0.985 }}
+                  className="w-full relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0D0D1A] via-[#1A1A2E] to-[#16162A] p-14 flex flex-col items-center justify-center shadow-2xl shadow-black/20"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" />
-                  <div className="relative">
-                    <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }} className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4">
-                      <Camera className="w-10 h-10 text-white" />
-                    </motion.div>
-                    <p className="text-white font-bold text-xl mb-1">Snap to Learn</p>
-                    <p className="text-white/70 text-sm">Point at anything and tap</p>
+                  {/* Animated lens rings */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <motion.div 
+                      animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.04, 0.12] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                      className="w-52 h-52 rounded-full border border-white/10" 
+                    />
+                    <motion.div 
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.02, 0.08] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
+                      className="absolute w-72 h-72 rounded-full border border-white/8" 
+                    />
+                    <motion.div 
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.01, 0.05] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+                      className="absolute w-96 h-96 rounded-full border border-white/5" 
+                    />
                   </div>
+
+                  {/* Lens icon */}
+                  <motion.div
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                    className="relative mb-6"
+                  >
+                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[#FF6B35]/30 to-[#FFD700]/20 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                      <Aperture className="w-14 h-14 text-white" />
+                    </div>
+                  </motion.div>
+
+                  {/* CTA text */}
+                  <p className="relative text-white font-bold text-3xl mb-2 tracking-tight">Snap to Learn</p>
+                  <p className="relative text-white/50 text-base font-medium">Point at anything in the world</p>
+
+                  {/* Corner accents — viewfinder energy */}
+                  <div className="absolute top-5 left-5 w-8 h-8 border-l-2 border-t-2 border-white/20 rounded-tl-lg" />
+                  <div className="absolute top-5 right-5 w-8 h-8 border-r-2 border-t-2 border-white/20 rounded-tr-lg" />
+                  <div className="absolute bottom-5 left-5 w-8 h-8 border-l-2 border-b-2 border-white/20 rounded-bl-lg" />
+                  <div className="absolute bottom-5 right-5 w-8 h-8 border-r-2 border-b-2 border-white/20 rounded-br-lg" />
                 </motion.button>
 
                 <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-
-                {/* Demo subjects */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mt-5">
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {EXAMPLE_SUBJECTS.map((s, i) => (
-                      <motion.button
-                        key={i}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleCapture(s.label)}
-                        className="px-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:border-[#FF6B35]/40 hover:text-[#FF6B35] hover:shadow-md transition-all flex items-center gap-2"
-                      >
-                        <span>{s.emoji}</span>
-                        <span>{s.label}</span>
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Text fallback */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }} className="mt-8">
-                  <p className="text-center text-xs text-gray-400 font-medium mb-3">Prefer to type?</p>
-                  <div className="relative">
-                    <input
-                      ref={textInputRef}
-                      type="text"
-                      placeholder="Ask anything instead..."
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
-                          handleCapture((e.target as HTMLInputElement).value.trim());
-                        }
-                      }}
-                      className="w-full px-5 py-4 rounded-2xl bg-white border border-gray-200 text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B35]/50 focus:ring-4 focus:ring-[#FF6B35]/10 shadow-sm transition-all"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        const val = textInputRef.current?.value.trim();
-                        if (val) handleCapture(val);
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white shadow-lg hover:shadow-xl transition-shadow"
-                    >
-                      <ArrowRight className="w-5 h-5" />
-                    </motion.button>
-                  </div>
-                </motion.div>
-
               </motion.div>
             </section>
 
-            {/* How it works */}
-            <section className="w-full px-5 pb-12">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="max-w-sm mx-auto">
-                <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-100 p-6 shadow-sm">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-[#FF6B35]/10 flex items-center justify-center mx-auto mb-2">
-                        <Camera className="w-5 h-5 text-[#FF6B35]" />
-                      </div>
-                      <p className="text-gray-900 text-sm font-semibold mb-0.5">Snap</p>
-                      <p className="text-gray-400 text-xs">anything you see</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-[#FFD700]/10 flex items-center justify-center mx-auto mb-2">
-                        <Wand2 className="w-5 h-5 text-[#FFD700]" />
-                      </div>
-                      <p className="text-gray-900 text-sm font-semibold mb-0.5">Learn</p>
-                      <p className="text-gray-400 text-xs">instantly</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-[#00C896]/10 flex items-center justify-center mx-auto mb-2">
-                        <BookOpen className="w-5 h-5 text-[#00C896]" />
-                      </div>
-                      <p className="text-gray-900 text-sm font-semibold mb-0.5">Explore</p>
-                      <p className="text-gray-400 text-xs">at your pace</p>
-                    </div>
-                  </div>
+            {/* === SECONDARY — TYPING FALLBACK === */}
+            <section className="w-full px-6 pb-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="max-w-md mx-auto"
+              >
+                {/* Subtle divider */}
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-gray-400 text-sm font-medium">or ask a question</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                {/* Glass input */}
+                <div className="relative">
+                  <input
+                    ref={textInputRef}
+                    type="text"
+                    placeholder="Ask anything instead..."
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
+                        handleCapture((e.target as HTMLInputElement).value.trim());
+                      }
+                    }}
+                    className="w-full px-6 py-4.5 rounded-2xl bg-white border border-gray-200 text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B35]/40 focus:ring-4 focus:ring-[#FF6B35]/10 shadow-sm shadow-gray-200/80 transition-all"
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      const val = textInputRef.current?.value.trim();
+                      if (val) handleCapture(val);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-3.5 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            </section>
+
+            {/* === WHAT YOU CAN EXPLORE === */}
+            <section className="w-full px-6 pb-12">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="max-w-md mx-auto"
+              >
+                <p className="text-center text-gray-400 text-sm font-medium mb-5">What can you explore?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { icon: '🚒', label: 'How things work', sub: 'from fire hydrants to engines' },
+                    { icon: '🌱', label: 'How nature works', sub: 'from seeds to weather' },
+                    { icon: '🏛️', label: 'How history connects', sub: 'from ancient to modern' },
+                    { icon: '💡', label: 'How ideas form', sub: 'from science to everyday' },
+                  ].map((card, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 + i * 0.07 }}
+                      className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm"
+                    >
+                      <span className="text-2xl mb-2 block">{card.icon}</span>
+                      <p className="text-gray-900 text-sm font-semibold mb-0.5">{card.label}</p>
+                      <p className="text-gray-400 text-xs leading-relaxed">{card.sub}</p>
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
             </section>
@@ -391,33 +418,34 @@ export default function GeneratePage() {
       {/* === MODE SELECT === */}
       <AnimatePresence mode="wait">
         {view === 'mode' && (
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="relative flex-1 flex flex-col z-10 px-5 pt-6">
-            <button onClick={handleTryAnother} className="flex items-center gap-1.5 text-gray-400 text-xs hover:text-gray-600 transition-colors mb-4 self-start">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} className="relative flex-1 flex flex-col z-10 px-6 pt-6">
+            
+            <button onClick={handleTryAnother} className="flex items-center gap-2 text-gray-400 text-sm hover:text-gray-600 transition-colors mb-5 self-start">
               <X className="w-4 h-4" />
-              Start over
+              <span>Start over</span>
             </button>
 
             {photoPreview && (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative rounded-3xl overflow-hidden mb-5 shadow-xl">
-                <img src={photoPreview} alt="Captured" className="w-full h-44 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative rounded-[1.5rem] overflow-hidden mb-6 shadow-xl">
+                <img src={photoPreview} alt="Captured" className="w-full h-48 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
               </motion.div>
             )}
 
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="text-center mb-6">
-              <p className="text-[11px] text-gray-400 font-medium uppercase tracking-widest mb-1">You captured</p>
-              <h2 className="text-2xl font-bold text-gray-900 capitalize">{capturedSubject}</h2>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="text-center mb-7">
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mb-1">You captured</p>
+              <h2 className="text-3xl font-bold text-gray-900 capitalize">{capturedSubject}</h2>
             </motion.div>
 
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-center text-gray-500 text-sm mb-6">
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="text-center text-gray-500 text-base mb-7">
               What would you like to do?
             </motion.p>
 
             <div className="space-y-3 pb-6">
               
-              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }} whileHover={{ scale: 1.02, x: 4 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('explain')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#FF6B35]/20 shadow-sm hover:shadow-md hover:border-[#FF6B35]/40 transition-all">
+              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('explain')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#FF6B35]/20 shadow-sm hover:shadow-lg hover:border-[#FF6B35]/40 transition-all">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-[#FF6B35]/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FF6B35]/15 to-[#FF6B35]/5 flex items-center justify-center flex-shrink-0">
                     <Lightbulb className="w-7 h-7 text-[#FF6B35]" />
                   </div>
                   <div className="flex-1 text-left">
@@ -428,22 +456,22 @@ export default function GeneratePage() {
                 </div>
               </motion.button>
 
-              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} whileHover={{ scale: 1.02, x: 4 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('teach')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#FFD700]/20 shadow-sm hover:shadow-md hover:border-[#FFD700]/40 transition-all">
+              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('teach')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#FFD700]/20 shadow-sm hover:shadow-lg hover:border-[#FFD700]/40 transition-all">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-[#FFD700]/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FFD700]/15 to-[#FFD700]/5 flex items-center justify-center flex-shrink-0">
                     <BookOpen className="w-7 h-7 text-[#FFD700]" />
                   </div>
                   <div className="flex-1 text-left">
                     <p className="font-bold text-gray-900 text-lg mb-0.5">Teach me more</p>
-                    <p className="text-gray-500 text-sm">Full lesson with context</p>
+                    <p className="text-gray-500 text-sm">Full lesson with real context</p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </motion.button>
 
-              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }} whileHover={{ scale: 1.02, x: 4 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('quiz')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#00C896]/20 shadow-sm hover:shadow-md hover:border-[#00C896]/40 transition-all">
+              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('quiz')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#00C896]/20 shadow-sm hover:shadow-lg hover:border-[#00C896]/40 transition-all">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-[#00C896]/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00C896]/15 to-[#00C896]/5 flex items-center justify-center flex-shrink-0">
                     <HelpCircle className="w-7 h-7 text-[#00C896]" />
                   </div>
                   <div className="flex-1 text-left">
@@ -454,7 +482,7 @@ export default function GeneratePage() {
                 </div>
               </motion.button>
 
-              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} whileHover={{ scale: 1.02, x: 4 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('deeper')} className="w-full p-5 rounded-2xl bg-gray-900 shadow-lg hover:shadow-xl transition-all">
+              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('deeper')} className="w-full p-5 rounded-2xl bg-gray-900 shadow-xl hover:shadow-2xl transition-all">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0">
                     <Layers className="w-7 h-7 text-white" />
@@ -463,7 +491,7 @@ export default function GeneratePage() {
                     <p className="font-bold text-white text-lg mb-0.5">Explore deeper</p>
                     <p className="text-white/50 text-sm">Comprehensive breakdown</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-white/40" />
+                  <ChevronRight className="w-5 h-5 text-white/30" />
                 </div>
               </motion.button>
 
@@ -475,83 +503,67 @@ export default function GeneratePage() {
       {/* === LOADING === */}
       <AnimatePresence>
         {loading && view !== 'home' && view !== 'mode' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col items-center justify-center px-5 z-10">
-            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#FF6B35]/10 to-[#FFD700]/10 flex items-center justify-center mx-auto mb-6">
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
-                  <Sparkles className="w-10 h-10 text-[#FF6B35]" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col items-center justify-center px-6 z-10">
+            <motion.div initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="text-center">
+              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[#FF6B35]/10 to-[#FFD700]/10 flex items-center justify-center mx-auto mb-6">
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}>
+                  <Sparkles className="w-12 h-12 text-[#FF6B35]" />
                 </motion.div>
               </div>
-              <p className="text-gray-700 font-semibold text-lg mb-1">{loadingMessage || 'Thinking...'}</p>
-              <p className="text-gray-400 text-sm">This takes about 3 seconds</p>
+              <p className="text-gray-800 font-bold text-xl mb-1">{loadingMessage || 'Getting curious...'}</p>
+              <p className="text-gray-400 text-sm">Almost there</p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* === QUIZ STEP === */}
+      {/* === QUIZ === */}
       <AnimatePresence mode="wait">
         {!loading && view === 'quiz' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative flex-1 flex flex-col z-10 px-5 py-6">
-            <div className="max-w-sm mx-auto w-full">
-              
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative flex-1 flex flex-col z-10 px-6 py-6">
+            <div className="max-w-md mx-auto w-full">
               <div className="text-center mb-8">
-                <div className="w-16 h-16 rounded-3xl bg-[#00C896]/10 flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#00C896]/20 to-[#00C896]/5 flex items-center justify-center mx-auto mb-4">
                   <HelpCircle className="w-8 h-8 text-[#00C896]" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">Quiz time!</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Quiz time</h2>
                 <p className="text-gray-500 text-sm">Think about {capturedSubject.toLowerCase()}...</p>
               </div>
-
               <div className="space-y-3 mb-6">
                 {quizQuestions.map((q, i) => {
                   const answered = answeredQuestions.has(i);
                   return (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className={`rounded-2xl transition-all ${answered ? q.type === 'intuition' ? 'bg-[#FFD700]/8 border-2 border-[#FFD700]/30' : 'bg-[#00C896]/8 border-2 border-[#00C896]/20' : 'bg-white border-2 border-gray-100'}`}
+                      transition={{ delay: i * 0.08 }}
+                      className={`rounded-2xl transition-all ${answered ? q.type === 'intuition' ? 'bg-[#FFD700]/10 border-2 border-[#FFD700]/30' : 'bg-[#00C896]/10 border-2 border-[#00C896]/20' : 'bg-white border-2 border-gray-100'}`}
                     >
                       <button onClick={() => !answered && handleAnswer(i)} disabled={answered} className="w-full p-4 text-left">
                         <div className="flex items-start gap-3">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${answered ? q.type === 'intuition' ? 'bg-[#FFD700]/20' : 'bg-[#00C896]/20' : 'bg-gray-100'}`}>
-                            {answered ? (
-                              <CheckCircle className={`w-5 h-5 ${q.type === 'intuition' ? 'text-[#FFD700]' : 'text-[#00C896]'}`} />
-                            ) : (
-                              <span className="text-sm font-bold text-gray-400">{i + 1}</span>
-                            )}
+                            {answered ? <CheckCircle className={`w-5 h-5 ${q.type === 'intuition' ? 'text-[#FFD700]' : 'text-[#00C896]'}`} /> : <span className="text-sm font-bold text-gray-400">{i + 1}</span>}
                           </div>
                           <div className="flex-1">
                             <p className={`text-sm leading-relaxed ${answered ? 'text-gray-400' : 'text-gray-800'}`}>{q.text}</p>
-                            {!answered && q.hint && (
-                              <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-                                <span>💡</span> {q.hint}
-                              </p>
-                            )}
+                            {!answered && q.hint && <p className="text-xs text-gray-400 mt-1.5">💡 {q.hint}</p>}
                           </div>
                         </div>
                       </button>
                       {answered && q.type === 'intuition' && q.answer && (
                         <div className="px-4 pb-4">
-                          <div className="p-4 rounded-xl bg-[#FFD700]/8 border border-[#FFD700]/20">
-                            <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-wider mb-1.5">Actually</p>
-                            <p className="text-sm text-gray-700 leading-relaxed">{q.answer}</p>
+                          <div className="p-3 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/20">
+                            <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-wider mb-1">Actually</p>
+                            <p className="text-sm text-gray-700">{q.answer}</p>
                           </div>
-                        </div>
-                      )}
-                      {answered && q.type === 'experience' && (
-                        <div className="px-4 pb-4">
-                          <p className="text-xs text-gray-400 italic leading-relaxed">Everyone's experience is valid. Here's how it actually works...</p>
                         </div>
                       )}
                     </motion.div>
                   );
                 })}
               </div>
-
-              <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} onClick={loadLesson} className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
+              <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} onClick={loadLesson} className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
                 See the full explanation
                 <ChevronRight className="w-5 h-5" />
               </motion.button>
@@ -560,20 +572,20 @@ export default function GeneratePage() {
         )}
       </AnimatePresence>
 
-      {/* === RESULT STEP === */}
+      {/* === RESULT === */}
       <AnimatePresence mode="wait">
         {!loading && view === 'result' && result && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative flex-1 flex flex-col z-10">
-            
+
             {/* Result header */}
-            <div className="w-full px-5 pt-5 pb-4 bg-white border-b border-gray-100">
-              <div className="max-w-sm mx-auto">
-                <button onClick={handleTryAnother} className="flex items-center gap-1.5 text-gray-400 text-xs hover:text-gray-600 transition-colors mb-3">
+            <div className="w-full px-6 pt-5 pb-4 bg-white border-b border-gray-100">
+              <div className="max-w-md mx-auto">
+                <button onClick={handleTryAnother} className="flex items-center gap-2 text-gray-400 text-sm hover:text-gray-600 transition-colors mb-4">
                   <RefreshCw className="w-3.5 h-3.5" />
-                  Try another
+                  <span>Try another</span>
                 </button>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#FF6B35]/20">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-xl shadow-[#FF6B35]/20">
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -586,66 +598,64 @@ export default function GeneratePage() {
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-sm mx-auto px-5 py-5 space-y-3">
+              <div className="max-w-md mx-auto px-6 py-5 space-y-3">
 
                 {result.hook && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl bg-gradient-to-r from-[#FF6B35]/8 to-[#FFD700]/5 border border-[#FF6B35]/15">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl bg-gradient-to-r from-[#FF6B35]/10 to-[#FFD700]/5 border border-[#FF6B35]/15">
                     <p className="text-base text-gray-800 font-medium leading-relaxed">"{result.hook}"</p>
                   </motion.div>
                 )}
 
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
                   <h2 className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider mb-2">What is this</h2>
                   <p className="text-sm text-gray-700 leading-relaxed">{result.whatIsThis}</p>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
                   <h2 className="text-[10px] font-bold text-[#FFD700] uppercase tracking-wider mb-2">How it works</h2>
                   <p className="text-sm text-gray-700 leading-relaxed">{result.howItWorks}</p>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
                   <h2 className="text-[10px] font-bold text-[#B866D6] uppercase tracking-wider mb-2">Why it matters</h2>
                   <p className="text-sm text-gray-700 leading-relaxed">{result.whyItMatters}</p>
                 </motion.div>
 
                 {result.vocabulary && result.vocabulary.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
                     <h2 className="text-[10px] font-bold text-[#00D4FF] uppercase tracking-wider mb-3">Key ideas</h2>
                     <div className="flex flex-wrap gap-2">
                       {result.vocabulary.map((v, i) => (
-                        <span key={i} className="text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-xl font-medium">
-                          {v}
-                        </span>
+                        <span key={i} className="text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-xl font-medium">{v}</span>
                       ))}
                     </div>
                   </motion.div>
                 )}
 
                 {result.tryThis && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="p-5 rounded-2xl bg-[#00C896]/8 border border-[#00C896]/20">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="p-5 rounded-2xl bg-[#00C896]/8 border border-[#00C896]/20">
                     <h2 className="text-[10px] font-bold text-[#00C896] uppercase tracking-wider mb-2">Try it</h2>
                     <p className="text-sm text-gray-700 leading-relaxed">{result.tryThis}</p>
                   </motion.div>
                 )}
 
                 {result.question && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl bg-gray-50 border border-gray-100">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl bg-gray-50 border border-gray-100">
                     <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Question to consider</h2>
                     <p className="text-sm text-gray-600 leading-relaxed">{result.question}</p>
                   </motion.div>
                 )}
 
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="pt-2">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="pt-2">
                   <ShareCard result={result} item={capturedSubject} />
                 </motion.div>
 
                 {/* Explore more */}
-                <div className="pt-4 pb-6">
+                <div className="pt-5 pb-6">
                   <p className="text-center text-[10px] text-gray-400 uppercase tracking-widest mb-3">Explore more</p>
                   <div className="grid grid-cols-2 gap-2">
                     {(['explain', 'teach', 'quiz', 'deeper'] as Mode[]).filter(m => m !== mode).map(m => (
-                      <button key={m} onClick={() => selectMode(m)} className="py-3 px-3 rounded-2xl bg-white border border-gray-200 text-gray-600 text-xs font-medium hover:border-[#FF6B35]/40 hover:text-[#FF6B35] hover:shadow-md transition-all">
+                      <button key={m} onClick={() => selectMode(m)} className="py-3 px-3 rounded-2xl bg-white border border-gray-200 text-gray-600 text-xs font-semibold hover:border-[#FF6B35]/40 hover:text-[#FF6B35] hover:shadow-md transition-all">
                         {m === 'explain' ? '⚡ Explain it' : m === 'teach' ? '📖 Teach me' : m === 'quiz' ? '❓ Quiz me' : '🔍 Explore deeper'}
                       </button>
                     ))}
