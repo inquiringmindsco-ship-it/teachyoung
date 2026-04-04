@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Sparkles, Zap, RotateCcw } from 'lucide-react';
+import { Camera, Sparkles, Zap, RotateCcw, Share2, Download, Bookmark } from 'lucide-react';
+import { toPng } from 'html-to-image';
 
 interface LessonPlan {
   title: string;
@@ -21,6 +22,15 @@ interface Challenge {
   timeNeeded: string;
   whatToDo: string;
   bonusQuestion: string;
+}
+
+interface SavedLesson {
+  id: string;
+  item: string;
+  ageGroup: string;
+  lesson: LessonPlan;
+  challenge: Challenge;
+  createdAt: string;
 }
 
 type Step = 'input' | 'loading' | 'lesson';
@@ -245,6 +255,185 @@ const generateLesson = (item: string, ageGroup: string): { lesson: LessonPlan; c
   return { lesson, challenge };
 };
 
+// Storage helpers
+const STORAGE_KEY = 'teachyoung_saved_lessons';
+
+const saveLesson = (item: string, ageGroup: string, lesson: LessonPlan, challenge: Challenge): void => {
+  try {
+    const saved = getSavedLessons();
+    const newLesson: SavedLesson = {
+      id: Date.now().toString(),
+      item,
+      ageGroup,
+      lesson,
+      challenge,
+      createdAt: new Date().toISOString(),
+    };
+    saved.unshift(newLesson);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 50))); // Max 50
+  } catch (e) {
+    console.warn('Could not save lesson', e);
+  }
+};
+
+const getSavedLessons = (): SavedLesson[] => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const deleteLesson = (id: string): void => {
+  const saved = getSavedLessons().filter(l => l.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+};
+
+// Share Card Component
+function ShareCard({ lesson, challenge, item, ageGroup }: { lesson: LessonPlan; challenge: Challenge; item: string; ageGroup: string }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [sharing, setSharing] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    if (!cardRef.current) return;
+    setSharing(true);
+    try {
+      const dataUrl = await toPng(cardRef.current, { quality: 0.9, pixelRatio: 2 });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `lesson-${item}.png`, { type: 'image/png' });
+      
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Lesson: ${item}`,
+          text: `We just learned about ${item}! Created with TeachYoung`,
+        });
+      } else {
+        // Fallback: download
+        const link = document.createElement('a');
+        link.download = `lesson-${item}.png`;
+        link.href = dataUrl;
+        link.click();
+      }
+    } catch (e) {
+      console.warn('Share failed', e);
+    }
+    setSharing(false);
+  }, [item]);
+
+  const handleSave = () => {
+    saveLesson(item, ageGroup, lesson, challenge);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Hidden share card (rendered for image generation) */}
+      <div className="fixed -left-[9999px] top-0" style={{ width: 600, height: 900 }}>
+        <div 
+          ref={cardRef}
+          className="w-[600px] h-[900px] p-8 flex flex-col"
+          style={{ background: 'linear-gradient(135deg, #0D0D1A 0%, #1A1A2E 100%)' }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-white/60 text-sm font-medium">TeachYoung</span>
+            </div>
+            <span className="text-white/40 text-xs">{lesson.ageGroup}</span>
+          </div>
+
+          {/* Title */}
+          <div className="mb-6">
+            <p className="text-[#00C896] text-xs font-medium uppercase tracking-wider mb-1">{lesson.subject}</p>
+            <h1 className="text-3xl font-bold text-white capitalize">{item}</h1>
+          </div>
+
+          {/* What is this */}
+          <div className="mb-4 p-4 rounded-xl bg-white/5">
+            <h2 className="text-xs font-bold text-[#FF6B35] uppercase tracking-wide mb-1">What is this</h2>
+            <p className="text-sm text-white/70 leading-relaxed">{lesson.whatIsThis}</p>
+          </div>
+
+          {/* How it works */}
+          <div className="mb-4 p-4 rounded-xl bg-white/5">
+            <h2 className="text-xs font-bold text-[#FFD700] uppercase tracking-wide mb-1">How it works</h2>
+            <p className="text-sm text-white/70 leading-relaxed">{lesson.howItWorks}</p>
+          </div>
+
+          {/* Why it matters */}
+          <div className="mb-4 p-4 rounded-xl bg-white/5">
+            <h2 className="text-xs font-bold text-[#B866D6] uppercase tracking-wide mb-1">Why it matters</h2>
+            <p className="text-sm text-white/70 leading-relaxed">{lesson.whyItMatters}</p>
+          </div>
+
+          {/* Vocabulary */}
+          <div className="mb-4 p-4 rounded-xl bg-white/5">
+            <h2 className="text-xs font-bold text-[#00D4FF] uppercase tracking-wide mb-2">Vocabulary</h2>
+            <div className="flex flex-wrap gap-2">
+              {lesson.vocabulary.map((v, i) => (
+                <span key={i} className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
+                  <span className="text-white/80 font-medium">{v.word}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Try this */}
+          <div className="p-4 rounded-xl bg-[#00C896]/10 border border-[#00C896]/20">
+            <h2 className="text-xs font-bold text-[#00C896] uppercase tracking-wide mb-1">Try this together</h2>
+            <p className="text-sm text-white/70">{lesson.tryThisTogether}</p>
+          </div>
+
+          {/* Challenge */}
+          <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#FFD700]/10 border border-[#FFD700]/30">
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="w-4 h-4 text-[#FFD700]" />
+              <span className="text-xs font-bold text-[#FFD700] uppercase tracking-wide">5-Min Challenge</span>
+            </div>
+            <p className="text-sm font-medium text-white">{challenge.mission}</p>
+            <p className="text-xs text-white/50 mt-1">{challenge.timeNeeded}</p>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-auto pt-6 flex items-center justify-between">
+            <p className="text-white/30 text-xs">teachyg.org</p>
+            <p className="text-white/30 text-xs">Made for curious minds</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button 
+          onClick={handleShare}
+          disabled={sharing}
+          className="flex-1 py-3 rounded-xl bg-white/10 text-white/80 text-xs font-medium flex items-center justify-center gap-2 hover:bg-white/15 transition-colors"
+        >
+          <Share2 className="w-4 h-4" />
+          {sharing ? 'Preparing...' : 'Share Card'}
+        </button>
+        <button 
+          onClick={handleSave}
+          className={`px-4 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-colors ${
+            saved 
+              ? 'bg-[#00C896]/20 text-[#00C896]' 
+              : 'bg-white/10 text-white/80 hover:bg-white/15'
+          }`}
+        >
+          <Bookmark className="w-4 h-4" />
+          {saved ? 'Saved!' : 'Save'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function GeneratePage() {
   const [step, setStep] = useState<Step>('input');
   const [mode, setMode] = useState<'lesson' | 'challenge'>('lesson');
@@ -344,7 +533,7 @@ export default function GeneratePage() {
               />
             </div>
 
-            {/* Text input — the main interaction */}
+            {/* Text input */}
             <div className="space-y-2">
               <input 
                 type="text" 
@@ -355,7 +544,7 @@ export default function GeneratePage() {
                 className="w-full p-3.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-center text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#FF6B35]/40 transition-colors"
               />
               
-              {/* Age selector — compact pill row */}
+              {/* Age selector */}
               <div className="flex gap-1.5 justify-center">
                 {[
                   { value: '3-5', label: '3–5' },
@@ -409,11 +598,11 @@ export default function GeneratePage() {
         )}
 
         {/* LESSON STEP */}
-        {step === 'lesson' && lessonPlan && (
+        {step === 'lesson' && lessonPlan && challenge && (
           <motion.div 
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-sm pb-24"
+            className="w-full max-w-sm pb-32"
           >
             {/* Mode toggle */}
             <div className="flex gap-1.5 mb-5 p-1 bg-white/[0.05] rounded-xl">
@@ -441,7 +630,7 @@ export default function GeneratePage() {
               <>
                 <div className="text-center mb-4">
                   <span className="text-[10px] text-[#00C896] font-medium uppercase tracking-wider">{lessonPlan.subject}</span>
-                  <h1 className="text-xl font-bold mt-0.5 capitalize">{lessonPlan.title}</h1>
+                  <h1 className="text-xl font-bold mt-0.5 capitalize">{item}</h1>
                 </div>
 
                 <div className="space-y-3">
@@ -485,11 +674,21 @@ export default function GeneratePage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Share card */}
+                <div className="mt-6">
+                  <ShareCard 
+                    lesson={lessonPlan} 
+                    challenge={challenge} 
+                    item={item} 
+                    ageGroup={ageGroup} 
+                  />
+                </div>
               </>
             )}
 
             {/* CHALLENGE VIEW */}
-            {mode === 'challenge' && challenge && (
+            {mode === 'challenge' && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -516,6 +715,16 @@ export default function GeneratePage() {
                 <div className="p-4 rounded-xl bg-[#B866D6]/8 border border-[#B866D6]/15">
                   <p className="text-[11px] text-[#B866D6] font-bold uppercase tracking-wide mb-1">💎 Bonus</p>
                   <p className="text-sm text-white/70">{challenge.bonusQuestion}</p>
+                </div>
+
+                {/* Share card for challenge */}
+                <div className="mt-4">
+                  <ShareCard 
+                    lesson={lessonPlan} 
+                    challenge={challenge} 
+                    item={`${challenge.mission}`} 
+                    ageGroup={ageGroup} 
+                  />
                 </div>
               </motion.div>
             )}
