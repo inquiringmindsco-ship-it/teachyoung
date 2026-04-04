@@ -2,43 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SYSTEM_PROMPT = `You are generating 3 quick curiosity questions to engage someone BEFORE they see an explanation.
 
-Rules:
-- These questions come BEFORE the explanation
-- They should trigger thinking, not test knowledge
-- Make people slightly curious to see if they were right
-- Questions should be varied in type (prediction, experience, intuition)
-- No right or wrong — just "think about it"
-- Fast to answer (tap/click)
-- Keep them feeling curious, not academic
+These questions serve dual purpose:
+1. Engage thinking before explanation
+2. Light self-assessment — they think about their answer, then learn
 
-Generate 3 questions as JSON with this exact format:
+Question types:
+- predict: "What do you think happens when...?" / "What would you expect if...?"
+- experience: "Have you ever noticed...?" / "Where have you seen this before?" (no wrong answer, just reflection)
+- intuition: "Why do you think it works that way?" / "What's really happening inside?" (these have a correct answer to reveal)
+
+Format as JSON with this exact structure:
 
 {
   "questions": [
     {
       "type": "predict",
-      "text": "A prediction or "what do you think happens?" question",
-      "hint": "Optional one-word hint if they get stuck"
+      "text": "Question text that asks them to predict an outcome",
+      "hint": "Optional hint if they get stuck"
     },
     {
       "type": "experience", 
-      "text": "A question about their personal experience or where they've seen this",
+      "text": "Question about their personal experience or observations",
       "hint": null
     },
     {
       "type": "intuition",
-      "text": "A question that makes them think about the underlying mechanism or reason",
-      "hint": null
+      "text": "Question that probes their understanding of the mechanism",
+      "answer": "The actual correct explanation (1 sentence, shown after they think)",
+      "hint": "Optional hint"
     }
   ]
 }
 
-Guidelines per type:
-- predict: "What do you think happens when...?" / "What would you expect if...?"
-- experience: "Have you ever noticed...?" / "Where have you seen this before?"
-- intuition: "Why do you think it works that way?" / "What's really happening inside?"
-
-The topic will be provided as the item name. Keep questions conversational and short.`;
+Rules:
+- Questions should be conversational, not academic
+- predict and experience questions have no wrong answer — they're for reflection
+- intuition questions reveal the "aha" answer after they think
+- Keep questions short (under 25 words each)
+- The topic will be provided as the item name
+- Make intuition questions genuinely interesting — the "aha" moment is what makes this satisfying`;
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
           { role: 'user', content: `Generate curiosity questions about: ${item}` },
         ],
         response_format: { type: 'json_object' },
-        max_tokens: 600,
+        max_tokens: 800,
       }),
     });
 

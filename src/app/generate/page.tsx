@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Sparkles, Zap, RotateCcw, Share2, ChevronRight, Lightbulb } from 'lucide-react';
+import { Camera, Sparkles, Zap, RotateCcw, Share2, ChevronRight, Lightbulb, Flame, Compass } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import { useGamification } from '../hooks/useGamification';
 
 interface LessonPlan {
   hook: string;
@@ -20,6 +21,7 @@ interface QuizQuestion {
   type: string;
   text: string;
   hint: string | null;
+  answer?: string;
 }
 
 interface Challenge {
@@ -171,7 +173,10 @@ export default function GeneratePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { state, showDiscoveryToast, showAchievementToast, addDiscovery, completeChallenge, useCamera } = useGamification();
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    useCamera();
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -187,7 +192,6 @@ export default function GeneratePage() {
   const handleGenerate = async () => {
     if (!item.trim()) return;
     
-    // First get quiz questions
     try {
       const qResponse = await fetch('/api/generate-questions', {
         method: 'POST',
@@ -201,7 +205,6 @@ export default function GeneratePage() {
       setStep('quiz');
     } catch (error) {
       console.error('Questions error:', error);
-      // Skip quiz if it fails, go straight to loading lesson
       loadLesson();
     }
   };
@@ -226,7 +229,8 @@ export default function GeneratePage() {
       setChallenge(generatedChallenge);
       setStep('result');
       
-      // Save to localStorage
+      addDiscovery();
+      
       try {
         const saved = JSON.parse(localStorage.getItem('understand_history') || '[]');
         saved.unshift({ id: Date.now().toString(), item: item.trim(), depth, lesson, challenge: generatedChallenge, createdAt: new Date().toISOString() });
@@ -244,14 +248,17 @@ export default function GeneratePage() {
     newAnswered.add(index);
     setAnsweredQuestions(newAnswered);
     
-    // If all answered (or skip allowed), auto-continue after brief moment
     if (newAnswered.size >= quizQuestions.length) {
-      setTimeout(() => loadLesson(), 600);
+      setTimeout(() => loadLesson(), 800);
     }
   };
 
   const handleSkip = () => {
     loadLesson();
+  };
+
+  const handleChallengeComplete = () => {
+    completeChallenge();
   };
 
   const handleTryAnother = () => {
@@ -275,13 +282,58 @@ export default function GeneratePage() {
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
         </div>
-        {step !== 'input' && (
-          <button onClick={handleTryAnother} className="text-xs text-white/40 hover:text-white/60 flex items-center gap-1 transition-colors">
-            <RotateCcw className="w-3 h-3" />
-            New
-          </button>
-        )}
+        
+        {/* Gamification — top right */}
+        <div className="flex items-center gap-3">
+          {state.streak > 0 && (
+            <div className="flex items-center gap-1 text-xs text-white/40">
+              <Flame className="w-3.5 h-3.5 text-[#FF6B35]" />
+              <span>{state.streak}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1 text-xs text-white/40">
+            <Compass className="w-3.5 h-3.5 text-[#00C896]" />
+            <span>{state.discoveries}</span>
+          </div>
+          {step !== 'input' && (
+            <button onClick={handleTryAnother} className="text-xs text-white/40 hover:text-white/60 flex items-center gap-1 transition-colors ml-1">
+              <RotateCcw className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </header>
+
+      {/* Toast — Discovery */}
+      <AnimatePresence>
+        {showDiscoveryToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="px-4 py-2 rounded-full bg-[#00C896]/20 border border-[#00C896]/30 text-[#00C896] text-xs font-medium">
+              +1 Discovery
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast — Achievement */}
+      <AnimatePresence>
+        {showAchievementToast && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="px-4 py-2 rounded-full bg-gradient-to-r from-[#FF6B35]/20 to-[#FFD700]/20 border border-[#FFD700]/30 text-[#FFD700] text-xs font-medium">
+              {showAchievementToast}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-5">
@@ -392,39 +444,63 @@ export default function GeneratePage() {
             </div>
 
             <div className="space-y-3 mb-6">
-              {quizQuestions.map((q, i) => (
-                <motion.button
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  onClick={() => handleAnswer(i)}
-                  disabled={answeredQuestions.has(i)}
-                  className={`w-full p-4 rounded-xl text-left transition-all ${
-                    answeredQuestions.has(i) 
-                      ? 'bg-[#00C896]/15 border border-[#00C896]/30' 
-                      : 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.1]'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      answeredQuestions.has(i) ? 'bg-[#00C896]/20' : 'bg-white/10'
-                    }`}>
-                      {answeredQuestions.has(i) ? (
-                        <Sparkles className="w-3 h-3 text-[#00C896]" />
-                      ) : (
-                        <span className="text-xs text-white/40">{i + 1}</span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-sm ${answeredQuestions.has(i) ? 'text-white/50' : 'text-white/80'}`}>{q.text}</p>
-                      {q.hint && !answeredQuestions.has(i) && (
-                        <p className="text-xs text-white/30 mt-1">Hint: {q.hint}</p>
-                      )}
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
+              {quizQuestions.map((q, i) => {
+                const answered = answeredQuestions.has(i);
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`rounded-xl transition-all ${
+                      answered 
+                        ? q.type === 'intuition' 
+                          ? 'bg-[#FFD700]/10 border border-[#FFD700]/30' 
+                          : 'bg-[#00C896]/10 border border-[#00C896]/20'
+                        : 'bg-white/[0.04] border border-white/[0.06]'
+                    }`}
+                  >
+                    <button
+                      onClick={() => !answered && handleAnswer(i)}
+                      disabled={answered}
+                      className="w-full p-4 text-left disabled:cursor-default"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          answered 
+                            ? q.type === 'intuition' ? 'bg-[#FFD700]/20' : 'bg-[#00C896]/20'
+                            : 'bg-white/10'
+                        }`}>
+                          {answered ? (
+                            <Sparkles className={`w-3 h-3 ${q.type === 'intuition' ? 'text-[#FFD700]' : 'text-[#00C896]'}`} />
+                          ) : (
+                            <span className="text-xs text-white/40">{i + 1}</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm ${answered ? 'text-white/50' : 'text-white/80'}`}>{q.text}</p>
+                          {!answered && q.hint && (
+                            <p className="text-xs text-white/30 mt-1">Hint: {q.hint}</p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                    {answered && q.type === 'intuition' && q.answer && (
+                      <div className="px-4 pb-4">
+                        <div className="p-3 rounded-lg bg-[#FFD700]/10 border border-[#FFD700]/20">
+                          <p className="text-xs text-[#FFD700] font-medium mb-1">Actually:</p>
+                          <p className="text-sm text-white/70">{q.answer}</p>
+                        </div>
+                      </div>
+                    )}
+                    {answered && q.type === 'experience' && (
+                      <div className="px-4 pb-4">
+                        <p className="text-xs text-white/40 italic">Your experience is valid. Everyone's different. Here's how it actually works...</p>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
 
             <div className="flex gap-2">
@@ -463,7 +539,7 @@ export default function GeneratePage() {
                 Explanation
               </button>
               <button
-                onClick={() => setMode('challenge')}
+                onClick={() => { setMode('challenge'); handleChallengeComplete(); }}
                 className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
                   mode === 'challenge' ? 'bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A]' : 'text-white/40'
                 }`}
@@ -584,7 +660,7 @@ export default function GeneratePage() {
                 </button>
                 {mode === 'explain' ? (
                   <button 
-                    onClick={() => setMode('challenge')}
+                    onClick={() => { setMode('challenge'); handleChallengeComplete(); }}
                     className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A] text-sm font-medium flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />

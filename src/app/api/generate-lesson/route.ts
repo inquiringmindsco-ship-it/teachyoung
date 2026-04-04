@@ -1,40 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DEPTH_PROMPTS: Record<string, string> = {
-  quick: 'Keep every answer to 1-2 sentences. Maximum brevity. Get to the point fast. No filler.',
-  standard: 'Be clear and thoughtful. Relate ideas to everyday life. Include useful vocabulary.',
-  deep: 'Go deeper with nuances, examples, and real-world applications. Challenge assumptions.',
-};
+const SYSTEM_PROMPT = `You are a smart friend explaining things over coffee. No jargon. No academic tone.
 
-const SYSTEM_PROMPT = `You are a clear, direct guide who explains things the way a smart friend would over coffee.
+Tone: Conversational, slightly witty, makes complex things feel simple and interesting.
+Never: "In today's world...", "Great question!", "Did you know...", "Phenomenon", "utilize", "leverages"
 
-Your explanations should feel like:
-- a natural conversation, not a lecture
-- full of real examples, not abstract theory
-- just slightly surprising — lead with what most people don't realize
-- honest about complexity, but never academic about it
-
-Every response should have a "hook" — one line that makes someone pause and want to read more. This comes from what is counterintuitive, unexpected, or quietly fascinating about the topic.
-
-Format your response as JSON with these fields:
-
+FORMAT — respond as JSON with this exact structure:
 {
-  "hook": "One short sentence that creates intrigue or challenges assumptions. Make it feel like the beginning of a conversation, not a textbook definition.",
-  "whatIsThis": "Clear, direct explanation. Cut to the essence in 1-3 sentences. No preamble.",
-  "howItWorks": "Plain-language explanation of the mechanism. Use a concrete analogy if it helps. 2-4 sentences.",
-  "whyItMatters": "Why this matters in everyday life. One sentence that connects it to something familiar.",
-  "vocabulary": ["key term 1", "key term 2", "key term 3"],
-  "tryThis": "One specific thing the person could do or look for right now to make this real. Keep it simple and actionable.",
-  "question": "One thought-provoking question that extends curiosity beyond this explanation."
+  "hook": "15 words or fewer. Punchy, slightly surprising. Makes someone want to keep reading.",
+  "whatIsThis": "2-3 sentences. Plain language. Start with what's most interesting about it.",
+  "howItWorks": "2-3 sentences. Simple mechanism explanation. Use a concrete example if helpful.",
+  "whyItMatters": "1-2 sentences. How this shows up in their life. Make them notice something.",
+  "vocabulary": ["key idea 1", "key idea 2", "key idea 3"],
+  "tryThis": "One specific, actionable thing they can do RIGHT NOW to experience this IRL.",
+  "question": "One question that extends the thinking — connects to something familiar."
 }
 
 Rules:
-- Never start with "In today's world..." or "Did you know..." or "Great question..."
-- Never use the word "phenomenon" or "utilize" or "leverages"
-- If the topic has a surprising angle, lead with it
-- Keep the hook as short as possible — aim for 15 words or fewer
-- The "what is this" should feel like the second sentence of a conversation, not the first
-- Sound like a human, not a reference card`;
+- hook must be 15 words max
+- No emoji in response
+- whatIsThis / howItWorks / whyItMatters should each be 2-3 short sentences max
+- vocabulary = simple terms, not definitions
+- tryThis = concrete and specific, not vague
+- question = thought-provoking but accessible
+- Depth affects detail level: quick = minimal, standard = moderate, deep = thorough`;
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -50,7 +39,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing item' }, { status: 400 });
     }
 
-    const depthInstruction = DEPTH_PROMPTS[depth] || DEPTH_PROMPTS['standard'];
+    const depthInstruction = depth === 'quick' 
+      ? 'Keep it very brief — just the essentials.' 
+      : depth === 'deep'
+      ? 'Be thorough and specific. Include the interesting details.'
+      : 'Balanced detail — enough to feel complete without being overwhelming.';
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -61,28 +54,28 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: `${SYSTEM_PROMPT}\n\nDepth level: ${depthInstruction}` },
-          { role: 'user', content: `Explain: ${item}` },
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: `Explain: ${item}. ${depthInstruction}` },
         ],
         response_format: { type: 'json_object' },
-        max_tokens: depth === 'quick' ? 600 : depth === 'deep' ? 1800 : 900,
+        max_tokens: 800,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
       console.error('OpenAI error:', error);
-      return NextResponse.json({ error: 'Failed to generate explanation' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to generate lesson' }, { status: 500 });
     }
 
     const data = await response.json();
-    const explanation = data.choices[0].message.content;
+    const lesson = data.choices[0].message.content;
 
-    return NextResponse.json({ lesson: JSON.parse(explanation || '{}') });
+    return NextResponse.json({ lesson: JSON.parse(lesson || '{}') });
   } catch (error: unknown) {
     console.error('Generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate explanation' },
+      { error: 'Failed to generate lesson' },
       { status: 500 }
     );
   }
