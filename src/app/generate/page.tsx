@@ -48,7 +48,7 @@ const generateChallenge = (item: string): Challenge => {
     { mission: 'Compare it', timeNeeded: '5 min', whatToDo: `Find something similar to "${item}" and list 3 ways they're alike and 3 ways they're different.`, bonusQuestion: 'Which is more interesting to you?' },
     { mission: '5 senses', timeNeeded: '5 min', whatToDo: `If possible, experience "${item}" with all 5 senses. Describe what you notice.`, bonusQuestion: 'Which sense gives you the most information?' },
   ];
-  
+
   const base = challenges[Math.floor(Math.random() * challenges.length)];
   return {
     mission: base.mission,
@@ -69,7 +69,7 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
       const dataUrl = await toPng(cardRef.current, { quality: 0.9, pixelRatio: 2 });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `overstood-${item}.png`, { type: 'image/png' });
-      
+
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -92,7 +92,7 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
     <div className="space-y-3">
       {/* Hidden share card */}
       <div className="fixed -left-[9999px] top-0" style={{ width: 600, height: 800 }}>
-        <div 
+        <div
           ref={cardRef}
           className="w-[600px] h-[800px] p-8 flex flex-col"
           style={{ background: 'linear-gradient(135deg, #0D0D1A 0%, #1A1A2E 100%)' }}
@@ -148,7 +148,7 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
       </div>
 
       {/* Button */}
-      <button 
+      <button
         onClick={handleShare}
         disabled={sharing}
         className="w-full py-3 rounded-xl bg-white/8 text-white/70 text-xs font-medium flex items-center justify-center gap-2 hover:bg-white/12 transition-colors"
@@ -170,6 +170,8 @@ export default function GeneratePage() {
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -191,6 +193,8 @@ export default function GeneratePage() {
 
   const handleGenerate = async () => {
     if (!item.trim()) return;
+    setLoading(true);
+    setLoadingMessage('Getting curious...');
     
     try {
       const qResponse = await fetch('/api/generate-questions', {
@@ -198,19 +202,30 @@ export default function GeneratePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item: item.trim() }),
       });
-      
+
       if (!qResponse.ok) throw new Error('Questions failed');
       const qData = await qResponse.json();
-      setQuizQuestions(qData.questions.questions || []);
-      setStep('quiz');
+      const questions = qData.questions.questions || [];
+      
+      setQuizQuestions(questions);
+      setStep(questions.length > 0 ? 'quiz' : 'result');
+      setLoading(false);
+      
+      if (questions.length === 0) {
+        loadLesson();
+      }
     } catch (error) {
       console.error('Questions error:', error);
+      setLoading(false);
       loadLesson();
     }
   };
 
   const loadLesson = async () => {
+    setLoading(true);
+    setLoadingMessage('Finding clarity...');
     setMode('explain');
+    
     try {
       const response = await fetch('/api/generate-lesson', {
         method: 'POST',
@@ -228,17 +243,19 @@ export default function GeneratePage() {
       setResult(lesson);
       setChallenge(generatedChallenge);
       setStep('result');
+      setLoading(false);
       
       addDiscovery();
       
       try {
-        const saved = JSON.parse(localStorage.getItem('phoenix_history') || '[]');
+        const saved = JSON.parse(localStorage.getItem('overstood_history') || '[]');
         saved.unshift({ id: Date.now().toString(), item: item.trim(), depth, lesson, challenge: generatedChallenge, createdAt: new Date().toISOString() });
-        localStorage.setItem('phoenix_history', JSON.stringify(saved.slice(0, 50)));
+        localStorage.setItem('overstood_history', JSON.stringify(saved.slice(0, 50)));
       } catch {}
       
     } catch (error) {
       console.error('Generation error:', error);
+      setLoading(false);
       setStep('input');
     }
   };
@@ -247,13 +264,14 @@ export default function GeneratePage() {
     const newAnswered = new Set(answeredQuestions);
     newAnswered.add(index);
     setAnsweredQuestions(newAnswered);
-    
+
     if (newAnswered.size >= quizQuestions.length) {
       setTimeout(() => loadLesson(), 800);
     }
   };
 
   const handleSkip = () => {
+    setQuizQuestions([]);
     loadLesson();
   };
 
@@ -265,11 +283,13 @@ export default function GeneratePage() {
     setStep('input');
     setPhotoPreview(null);
     setItem('');
+    setDepth('standard');
     setResult(null);
     setChallenge(null);
     setQuizQuestions([]);
     setAnsweredQuestions(new Set());
     setMode('explain');
+    setLoading(false);
     inputRef.current?.focus();
   };
 
@@ -282,8 +302,8 @@ export default function GeneratePage() {
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
         </div>
-        
-        {/* Gamification — top right */}
+
+        {/* Gamification - top right */}
         <div className="flex items-center gap-3">
           {state.streak > 0 && (
             <div className="flex items-center gap-1 text-xs text-white/40">
@@ -303,7 +323,7 @@ export default function GeneratePage() {
         </div>
       </header>
 
-      {/* Toast — Discovery */}
+      {/* Toast - Discovery */}
       <AnimatePresence>
         {showDiscoveryToast && (
           <motion.div
@@ -319,7 +339,7 @@ export default function GeneratePage() {
         )}
       </AnimatePresence>
 
-      {/* Toast — Achievement */}
+      {/* Toast - Achievement */}
       <AnimatePresence>
         {showAchievementToast && (
           <motion.div
@@ -338,53 +358,72 @@ export default function GeneratePage() {
       {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-5">
 
+        {/* LOADING STEP */}
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6B35]/20 to-[#FFD700]/20 flex items-center justify-center mx-auto mb-4">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              >
+                <Sparkles className="w-7 h-7 text-[#FFD700]" />
+              </motion.div>
+            </div>
+            <p className="text-white/50 text-sm">{loadingMessage || 'Thinking...'}</p>
+          </motion.div>
+        )}
+
         {/* INPUT STEP */}
-        {step === 'input' && (
-          <motion.div 
+        {!loading && step === 'input' && (
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-lg"
           >
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold tracking-tight mb-2">Overstood anything<br />instantly.</h1>
+              <h1 className="text-4xl font-bold tracking-tight mb-2">Understand anything.<br />Instantly.</h1>
               <p className="text-white/40 text-sm">Type or snap anything. Get a clear explanation.</p>
             </div>
 
             <div className="space-y-3">
               <div className="relative">
-                <input 
+                <input
                   ref={inputRef}
-                  type="text" 
+                  type="text"
                   value={item}
                   onChange={e => setItem(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && item.trim() && handleGenerate()}
-                  placeholder="Fire hydrant, gravity, barcodes, elevators..." 
+                  placeholder="Fire hydrant, gravity, barcodes, elevators..."
                   className="w-full p-4 pr-24 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-base text-white placeholder:text-white/25 focus:outline-none focus:border-[#FF6B35]/30 transition-colors text-center"
                   autoFocus
                 />
-                <button 
+                <button
                   onClick={() => fileInputRef.current?.click()}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg text-white/30 hover:text-white/50 transition-colors"
                 >
                   <Camera className="w-5 h-5" />
                 </button>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  ref={fileInputRef} 
-                  onChange={handlePhotoUpload} 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  className="hidden"
                 />
               </div>
 
               {photoPreview && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="relative rounded-xl overflow-hidden"
                 >
                   <img src={photoPreview} alt="Preview" className="w-full h-40 object-cover" />
-                  <button 
+                  <button
                     onClick={() => { setPhotoPreview(null); setItem(''); }}
                     className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white/70 hover:text-white"
                   >
@@ -401,8 +440,8 @@ export default function GeneratePage() {
                       key={d}
                       onClick={() => setDepth(d)}
                       className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-                        depth === d 
-                          ? 'bg-[#FF6B35] text-white' 
+                        depth === d
+                          ? 'bg-[#FF6B35] text-white'
                           : 'text-white/40 hover:text-white/60'
                       }`}
                     >
@@ -412,13 +451,13 @@ export default function GeneratePage() {
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={handleGenerate}
-                disabled={!item.trim()}
+                disabled={!item.trim() || loading}
                 className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A] font-bold text-base flex items-center justify-center gap-2 disabled:opacity-30 hover:opacity-90 transition-opacity"
               >
                 <Sparkles className="w-5 h-5" />
-                Generate
+                {loading ? 'Thinking...' : 'Generate'}
               </button>
             </div>
 
@@ -429,8 +468,8 @@ export default function GeneratePage() {
         )}
 
         {/* QUIZ STEP */}
-        {step === 'quiz' && (
-          <motion.div 
+        {!loading && step === 'quiz' && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="w-full max-w-lg"
@@ -453,9 +492,9 @@ export default function GeneratePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
                     className={`rounded-xl transition-all ${
-                      answered 
-                        ? q.type === 'intuition' 
-                          ? 'bg-[#FFD700]/10 border border-[#FFD700]/30' 
+                      answered
+                        ? q.type === 'intuition'
+                          ? 'bg-[#FFD700]/10 border border-[#FFD700]/30'
                           : 'bg-[#00C896]/10 border border-[#00C896]/20'
                         : 'bg-white/[0.04] border border-white/[0.06]'
                     }`}
@@ -467,7 +506,7 @@ export default function GeneratePage() {
                     >
                       <div className="flex items-start gap-3">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          answered 
+                          answered
                             ? q.type === 'intuition' ? 'bg-[#FFD700]/20' : 'bg-[#00C896]/20'
                             : 'bg-white/10'
                         }`}>
@@ -504,14 +543,15 @@ export default function GeneratePage() {
             </div>
 
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={handleSkip}
-                className="flex-1 py-3 rounded-xl bg-white/[0.04] text-white/50 text-sm hover:bg-white/[0.08] transition-colors"
+                disabled={loading}
+                className="flex-1 py-3 rounded-xl bg-white/[0.04] text-white/50 text-sm hover:bg-white/[0.08] transition-colors disabled:opacity-50"
               >
                 Skip
               </button>
-              <button 
-                onClick={() => loadLesson()}
+              <button
+                onClick={handleSkip}
                 className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A] font-medium text-sm flex items-center justify-center gap-2"
               >
                 See what you missed
@@ -522,8 +562,8 @@ export default function GeneratePage() {
         )}
 
         {/* RESULT STEP */}
-        {step === 'result' && result && challenge && (
-          <motion.div 
+        {!loading && step === 'result' && result && challenge && (
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-lg pb-32"
@@ -553,7 +593,8 @@ export default function GeneratePage() {
             {mode === 'explain' && (
               <>
                 <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold">Overstood: {item}</h1>
+                  <h1 className="text-2xl font-bold">{item}</h1>
+                  <p className="text-xs text-white/30 mt-1">Overstood</p>
                 </div>
 
                 <div className="space-y-4">
@@ -583,7 +624,7 @@ export default function GeneratePage() {
                       <h2 className="text-xs font-medium text-[#00D4FF] mb-3">Key ideas</h2>
                       <div className="flex flex-wrap gap-2">
                         {result.vocabulary.map((v, i) => (
-                          <span key={i} className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
+                          <span key={i} className="text-xs text-white/70 bg-white/[0.06] px-2.5 py-1 rounded-lg border border-white/[0.08]">
                             {v}
                           </span>
                         ))}
@@ -651,7 +692,7 @@ export default function GeneratePage() {
             {/* Fixed bottom */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0D0D1A] via-[#0D0D1A] to-transparent">
               <div className="w-full max-w-lg mx-auto flex gap-2">
-                <button 
+                <button
                   onClick={handleTryAnother}
                   className="flex-1 py-3.5 rounded-xl bg-white/8 text-white/70 text-sm flex items-center justify-center gap-2"
                 >
@@ -659,7 +700,7 @@ export default function GeneratePage() {
                   Try another
                 </button>
                 {mode === 'explain' ? (
-                  <button 
+                  <button
                     onClick={() => { setMode('challenge'); handleChallengeComplete(); }}
                     className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A] text-sm font-medium flex items-center justify-center gap-2"
                   >
@@ -667,7 +708,7 @@ export default function GeneratePage() {
                     Try it
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => setMode('explain')}
                     className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A] text-sm font-medium flex items-center justify-center gap-2"
                   >

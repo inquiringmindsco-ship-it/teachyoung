@@ -15,7 +15,7 @@ interface GamificationState {
   };
 }
 
-const STORAGE_KEY = 'phoenix_gamification';
+const STORAGE_KEY = 'overstood_gamification';
 
 const DEFAULT_STATE: GamificationState = {
   discoveries: 0,
