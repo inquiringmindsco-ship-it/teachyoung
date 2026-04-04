@@ -68,17 +68,17 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
     try {
       const dataUrl = await toPng(cardRef.current, { quality: 0.9, pixelRatio: 2 });
       const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], `understand-${item}.png`, { type: 'image/png' });
+      const file = new File([blob], `overstood-${item}.png`, { type: 'image/png' });
       
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `Understanding: ${item}`,
-          text: `I just learned about ${item} with Understand.`,
+          title: `Overstood: ${item}`,
+          text: `Check out what I learned about ${item} with Overstood.`,
         });
       } else {
         const link = document.createElement('a');
-        link.download = `understand-${item}.png`;
+        link.download = `overstood-${item}.png`;
         link.href = dataUrl;
         link.click();
       }
@@ -102,14 +102,14 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-white/60 text-sm font-medium">Understand</span>
+            <span className="text-white/60 text-sm font-medium">Overstood</span>
             <span className="text-white/30 text-xs ml-auto">{DEPTH_LABELS[depth]}</span>
           </div>
 
           {/* Title */}
           <div className="mb-6">
             <h1 className="text-4xl font-bold text-white mb-1">{item}</h1>
-            <p className="text-white/40 text-sm">Understanding</p>
+            <p className="text-white/40 text-sm">Type or snap anything. Get a clear explanation.</p>
           </div>
 
           {/* Hook */}
@@ -141,8 +141,8 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
 
           {/* Footer */}
           <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
-            <p className="text-white/20 text-xs">understand.app</p>
-            <p className="text-white/20 text-xs">Understand anything instantly</p>
+            <p className="text-white/20 text-xs">overstood.app</p>
+            <p className="text-white/20 text-xs">Overstood anything instantly</p>
           </div>
         </div>
       </div>
@@ -232,9 +232,9 @@ export default function GeneratePage() {
       addDiscovery();
       
       try {
-        const saved = JSON.parse(localStorage.getItem('understand_history') || '[]');
+        const saved = JSON.parse(localStorage.getItem('phoenix_history') || '[]');
         saved.unshift({ id: Date.now().toString(), item: item.trim(), depth, lesson, challenge: generatedChallenge, createdAt: new Date().toISOString() });
-        localStorage.setItem('understand_history', JSON.stringify(saved.slice(0, 50)));
+        localStorage.setItem('phoenix_history', JSON.stringify(saved.slice(0, 50)));
       } catch {}
       
     } catch (error) {
@@ -346,7 +346,7 @@ export default function GeneratePage() {
             className="w-full max-w-lg"
           >
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold tracking-tight mb-2">Understand anything<br />instantly.</h1>
+              <h1 className="text-4xl font-bold tracking-tight mb-2">Overstood anything<br />instantly.</h1>
               <p className="text-white/40 text-sm">Type or snap anything. Get a clear explanation.</p>
             </div>
 
@@ -553,7 +553,7 @@ export default function GeneratePage() {
             {mode === 'explain' && (
               <>
                 <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold">Understanding: {item}</h1>
+                  <h1 className="text-2xl font-bold">Overstood: {item}</h1>
                 </div>
 
                 <div className="space-y-4">

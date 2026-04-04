@@ -255,7 +255,7 @@ export const adventures = [
       { title: 'Document Your Evidence', description: 'Take photos or draw what you found. Label each discovery as evaporation, condensation, or precipitation.' },
     ],
     science: 'The water cycle is Earth\'s recycling system. Water on the ground heats up from the sun, becomes invisible vapor, rises up, forms clouds, then falls back as rain or snow. It has been cycling for billions of years!',
-    reflection: 'Where in nature did you see the most water cycle action? How does knowing about the water cycle help you understand weather?',
+    reflection: 'Where in nature did you see the most water cycle action? How does knowing about the water cycle help you overstood weather?',
     xp: 125,
   },
   {

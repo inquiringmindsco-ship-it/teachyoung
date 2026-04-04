@@ -1,11 +1,11 @@
-# TeachYoung™ — PHOENIX EDITION
+# Overstood™ — PHOENIX EDITION
 ## The Peak Performance Learning System for Black Children
 
 ---
 
 ## Vision Statement
 
-TeachYoung™ PHOENIX is not a homeschool platform. It is a **culturally-rooted peak performance system** designed for the holistic development of Black children—mind, body, and spirit.
+Overstood™ PHOENIX is not a homeschool platform. It is a **culturally-rooted peak performance system** designed for the holistic development of Black children—mind, body, and spirit.
 
 Built on the psychology of how Black children learn best, grounded in ancestral wisdom, and engineered for academic and personal excellence. This is the system that makes children operating at their highest potential the norm, not the exception.
 
@@ -361,5 +361,5 @@ Each week has a theme with:
 
 ---
 
-*TeachYoung™ PHOENIX EDITION*
+*Overstood™ PHOENIX EDITION*
 *Built for Kings, Queens, and Everyone They Become*
