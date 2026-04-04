@@ -645,3 +645,13 @@ h1, h2, h3, h4, h5, h6 {
     radial-gradient(ellipse at 80% 70%, rgba(123, 45, 142, 0.1) 0%, transparent 50%),
     var(--color-background);
 }
+
+/* Shimmer effect for camera button */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
