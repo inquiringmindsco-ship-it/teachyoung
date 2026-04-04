@@ -234,6 +234,10 @@ export default function GeneratePage() {
       </AnimatePresence>
 
       {/* === HEADER === */}
+      {/* DEBUG: NEW CAMERA BUILD ACTIVE - commit 9bdd582 */}
+      <div className="absolute top-0 left-0 right-0 z-[200] bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white text-center text-xs font-bold py-1">
+        🔍 NEW BUILD 9bdd582 — If you see this, new code IS rendering
+      </div>
       <header className="relative z-10 px-6 pt-6 pb-4 flex items-center justify-between flex-shrink-0">
         <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-lg shadow-[#FF6B35]/30">
