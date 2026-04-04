@@ -6,14 +6,13 @@ import { Camera, Sparkles, Zap, RotateCcw, Share2, ChevronDown } from 'lucide-re
 import { toPng } from 'html-to-image';
 
 interface LessonPlan {
-  title: string;
+  hook: string;
   whatIsThis: string;
   howItWorks: string;
   whyItMatters: string;
-  vocabulary: { word: string; definition: string }[];
-  tryThisTogether: string;
-  askYourChild: string[];
-  subject: string;
+  vocabulary: string[];
+  tryThis: string;
+  question: string;
   depth: string;
 }
 
@@ -114,6 +113,11 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
           {/* Main content */}
           <div className="flex-1 space-y-4">
             <div className="p-4 rounded-xl bg-white/5">
+              <h2 className="text-xs font-medium text-white/40 mb-1">Hook</h2>
+              <p className="text-base text-white font-medium leading-relaxed">{result.hook}</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white/5">
               <h2 className="text-xs font-medium text-[#FF6B35] mb-1">What is this</h2>
               <p className="text-sm text-white/70 leading-relaxed">{result.whatIsThis}</p>
             </div>
@@ -131,11 +135,11 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
             {result.vocabulary && result.vocabulary.length > 0 && (
               <div className="p-4 rounded-xl bg-white/5">
                 <h2 className="text-xs font-medium text-[#00D4FF] mb-2">Key ideas</h2>
-                <div className="space-y-1">
+                <div className="flex flex-wrap gap-2">
                   {result.vocabulary.map((v, i) => (
-                    <p key={i} className="text-sm text-white/60">
-                      <span className="text-white/80">{v.word}</span> — {v.definition}
-                    </p>
+                    <span key={i} className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
+                      {v}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -204,7 +208,6 @@ export default function GeneratePage() {
       const data = await response.json();
       const lesson = data.lesson as LessonPlan;
       
-      lesson.title = item.trim();
       lesson.depth = DEPTH_LABELS[depth];
       
       const generatedChallenge = generateChallenge(item.trim());
@@ -405,6 +408,12 @@ export default function GeneratePage() {
                 </div>
 
                 <div className="space-y-4">
+                  {result.hook && (
+                    <div className="p-5 rounded-2xl bg-gradient-to-r from-[#FF6B35]/10 to-[#FFD700]/5 border border-[#FF6B35]/20">
+                      <p className="text-base text-white/90 font-medium leading-relaxed">"{result.hook}"</p>
+                    </div>
+                  )}
+
                   <div className="p-5 rounded-2xl bg-white/[0.04]">
                     <h2 className="text-xs font-medium text-[#FF6B35] mb-2">What is this</h2>
                     <p className="text-sm text-white/70 leading-relaxed">{result.whatIsThis}</p>
@@ -423,31 +432,27 @@ export default function GeneratePage() {
                   {result.vocabulary && result.vocabulary.length > 0 && (
                     <div className="p-5 rounded-2xl bg-white/[0.04]">
                       <h2 className="text-xs font-medium text-[#00D4FF] mb-3">Key ideas</h2>
-                      <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
                         {result.vocabulary.map((v, i) => (
-                          <p key={i} className="text-sm text-white/60">
-                            <span className="text-white/80 font-medium">{v.word}</span> — {v.definition}
-                          </p>
+                          <span key={i} className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
+                            {v}
+                          </span>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {result.tryThisTogether && (
-                    <div className="p-5 rounded-2xl bg-[#00C896]/8 border border-[#00C896]/15">
+                  {result.tryThis && (
+                    <div className="p-4 rounded-2xl bg-[#00C896]/8 border border-[#00C896]/15">
                       <h2 className="text-xs font-medium text-[#00C896] mb-2">Try it</h2>
-                      <p className="text-sm text-white/70">{result.tryThisTogether}</p>
+                      <p className="text-sm text-white/70">{result.tryThis}</p>
                     </div>
                   )}
 
-                  {result.askYourChild && result.askYourChild.length > 0 && (
-                    <div className="p-5 rounded-2xl bg-white/[0.04]">
-                      <h2 className="text-xs font-medium text-[#FFD700] mb-3">Questions to consider</h2>
-                      <div className="space-y-2">
-                        {result.askYourChild.map((q, i) => (
-                          <p key={i} className="text-sm text-white/70">• {q}</p>
-                        ))}
-                      </div>
+                  {result.question && (
+                    <div className="p-4 rounded-2xl bg-white/[0.04]">
+                      <h2 className="text-xs font-medium text-[#FFD700] mb-2">Question to consider</h2>
+                      <p className="text-sm text-white/70">{result.question}</p>
                     </div>
                   )}
                 </div>
