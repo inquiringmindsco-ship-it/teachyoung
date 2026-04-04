@@ -1,46 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const AGE_PROMPTS: Record<string, string> = {
-  '3-5': 'Use very simple words. Keep it to 1-2 sentences per section. Make it playful and concrete. Focus on what they can see, touch, or experience with their senses.',
-  '6-8': 'Use simple explanations. Keep each section short (2-3 sentences). Relate ideas to things kids this age know — sports, games, food, school.',
-  '9-12': 'Use thoughtful explanations. Each section can be 3-4 sentences. Include real vocabulary words. Connect ideas to their everyday life.',
-  '13+': 'Use sophisticated but accessible language. Each section can be 4-5 sentences. Include nuanced explanations. Challenge them to think critically.',
+const DEPTH_PROMPTS: Record<string, string> = {
+  quick: 'Keep every answer to 1-2 sentences. Maximum brevity. Get to the point fast. No fluff, no preamble.',
+  standard: 'Use thoughtful explanations. Relate ideas to everyday life. Include useful vocabulary words that illuminate the topic.',
+  deep: 'Go deeper. Include nuances, examples, counterintuitive insights, and real-world applications. Challenge common assumptions. This is for someone who wants to really understand.',
 };
 
-const LESSON_SYSTEM_PROMPT = `You are creating real-world lessons for a child and parent to experience together.
+const SYSTEM_PROMPT = `You are a clear, knowledgeable guide who explains things in a way that feels like talking to a smart friend.
 
-Create a lesson that is:
-- engaging and conversational
-- easy to teach immediately
-- warm and human
-- short but impactful
-- NOT like a textbook
+Your explanations are:
+- Conversational and warm, never academic or stiff
+- Focused on what actually matters
+- Full of real-world examples
+- Honest about complexity without being overwhelming
 
-Use this structure EXACTLY:
+Use this structure when appropriate:
 
 1. What is this?
-Give a simple, relatable explanation.
+Give a clear, concise explanation. Cut to the essence.
 
 2. How it works
-Explain the real-world science, logic, or purpose in age-appropriate language.
+Explain the mechanism or logic in plain language. Use an analogy if it helps.
 
 3. Why it matters
-Connect it to everyday life so the child understands why it is important.
+Connect it to everyday life. Why should someone care about this?
 
-4. Vocabulary
-Give 3 words with their definitions that are useful and relevant.
+4. Key ideas (optional)
+2-3 important terms or concepts that illuminate the topic.
 
-5. Try this together
-Create ONE simple hands-on activity a parent and child can do right now.
+5. Try it
+One simple thing the person could do or look for to make this concrete.
 
-6. Ask your child
-Give 2-3 thoughtful questions that encourage curiosity and discussion.
+6. Questions to consider (optional)
+1-2 thought-provoking questions.
 
 Rules:
-- Do not sound like a textbook
-- Do not over-explain
-- Keep it exciting and usable
-- Make it feel like discovery`;
+- Never sound like a textbook
+- Never use filler phrases ("In today's modern world...")
+- Get to the point immediately
+- If something is counterintuitive, lead with that
+- Keep explanations as short as possible while being complete`;
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -50,13 +49,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { item, ageGroup } = await request.json();
+    const { item, depth } = await request.json();
 
-    if (!item || !ageGroup) {
-      return NextResponse.json({ error: 'Missing item or ageGroup' }, { status: 400 });
+    if (!item) {
+      return NextResponse.json({ error: 'Missing item' }, { status: 400 });
     }
 
-    const ageInstruction = AGE_PROMPTS[ageGroup] || AGE_PROMPTS['9-12'];
+    const depthInstruction = DEPTH_PROMPTS[depth] || DEPTH_PROMPTS['standard'];
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -67,28 +66,28 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: `${LESSON_SYSTEM_PROMPT}\n\nAge group context: ${ageInstruction}` },
-          { role: 'user', content: `Create a lesson about: ${item}` },
+          { role: 'system', content: `${SYSTEM_PROMPT}\n\nDepth level: ${depthInstruction}` },
+          { role: 'user', content: `Explain: ${item}` },
         ],
         response_format: { type: 'json_object' },
-        max_tokens: 1200,
+        max_tokens: depth === 'quick' ? 600 : depth === 'deep' ? 1800 : 1000,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
       console.error('OpenAI error:', error);
-      return NextResponse.json({ error: 'Failed to generate lesson' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to generate explanation' }, { status: 500 });
     }
 
     const data = await response.json();
-    const lesson = data.choices[0].message.content;
+    const explanation = data.choices[0].message.content;
 
-    return NextResponse.json({ lesson: JSON.parse(lesson || '{}') });
+    return NextResponse.json({ lesson: JSON.parse(explanation || '{}') });
   } catch (error: unknown) {
-    console.error('Lesson generation error:', error);
+    console.error('Generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate lesson' },
+      { error: 'Failed to generate explanation' },
       { status: 500 }
     );
   }
