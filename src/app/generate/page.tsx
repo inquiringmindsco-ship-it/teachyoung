@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Sparkles, Zap, RotateCcw, Share2, Download, Bookmark } from 'lucide-react';
+import { Camera, Sparkles, Zap, RotateCcw, Share2, Loader2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 interface LessonPlan {
@@ -24,276 +24,31 @@ interface Challenge {
   bonusQuestion: string;
 }
 
-interface SavedLesson {
-  id: string;
-  item: string;
-  ageGroup: string;
-  lesson: LessonPlan;
-  challenge: Challenge;
-  createdAt: string;
-}
-
 type Step = 'input' | 'loading' | 'lesson';
 
-const generateLesson = (item: string, ageGroup: string): { lesson: LessonPlan; challenge: Challenge } => {
-  const ageLabel = ageGroup === 'all' ? 'All Ages' : `Ages ${ageGroup}`;
-  const itemLower = item.toLowerCase();
+const generateChallenge = (item: string, lesson: Partial<LessonPlan>): Challenge => {
+  const challenges = [
+    { mission: 'Find 3 more examples', timeNeeded: '10 min', whatToDo: `Walk around and find 3 things that relate to "${item}". Write or draw what you found.`, bonusQuestion: 'What do they all have in common?' },
+    { mission: 'Become the teacher', timeNeeded: '15 min', whatToDo: `Explain "${item}" to someone in your family. Can they understand it?`, bonusQuestion: 'What questions did they ask?' },
+    { mission: 'Draw it from memory', timeNeeded: '10 min', whatToDo: `Close your eyes and picture "${item}". Draw it without looking. Add labels for the important parts.`, bonusQuestion: 'What did you remember first?' },
+    { mission: 'Sort it', timeNeeded: '10 min', whatToDo: `Find 3 things related to "${item}" and 3 things that are completely different. Sort them into groups.`, bonusQuestion: 'What makes things belong together?' },
+    { mission: '5 senses check', timeNeeded: '10 min', whatToDo: `Find something like "${item}" and describe it using all 5 senses — what you see, hear, smell, feel, and taste.`, bonusQuestion: 'Which sense gives you the most information?' },
+  ];
   
-  let subject = 'STEM';
-  let lessonData: Partial<LessonPlan> = {};
-  let challengeData: Partial<Challenge> = {};
-  
-  if (itemLower.includes('mcdonald') || itemLower.includes('burger') || itemLower.includes('fries') || itemLower.includes('wendy') || itemLower.includes('taco') || itemLower.includes('chick-fil')) {
-    subject = 'Business';
-    lessonData = {
-      whatIsThis: `This is ${item} — and it's really a science experiment. Every item tastes exactly the same, every time. That's not an accident. It's chemistry.`,
-      howItWorks: `They measure every ingredient down to the gram. Same temperature, same time, same result — thousands of times a day.`,
-      whyItMatters: `The same science is used in medicine and space food. Understanding this helps you see patterns everywhere.`,
-    };
-    challengeData = { mission: 'Find 3 more examples of standardization', timeNeeded: '10 min', whatToDo: 'Walk around and find 3 things that use the same "copy everywhere" strategy. Write or draw what you found.', bonusQuestion: 'Why do companies want everything to be exactly the same?' };
-  }
-  else if (itemLower.includes('febreze') || itemLower.includes('glade') || itemLower.includes('spray') || itemLower.includes('perfume') || itemLower.includes('candle')) {
-    subject = 'Chemistry';
-    lessonData = {
-      whatIsThis: `This is a chemistry trick. It doesn't actually remove smells — it hooks onto odor molecules and masks them with perfume. Like an invisible army fighting smell molecules!`,
-      howItWorks: `Every smell is tiny molecules floating in the air. This product grabs those molecules and neutralizes them, then releases a fresh scent.`,
-      whyItMatters: `The same chemistry is used in medicine and air purification on space stations.`,
-    };
-    challengeData = { mission: 'Smell detective', timeNeeded: '10 min', whatToDo: 'Find 3 different smells in your home. Describe each one using only words — no "it smells like ___."', bonusQuestion: 'Why do some smells stick to clothes while others fade quickly?' };
-  }
-  else if (itemLower.includes('phone') || itemLower.includes('iphone') || itemLower.includes('smartphone') || itemLower.includes('android') || itemLower.includes('tablet')) {
-    subject = 'Technology';
-    lessonData = {
-      whatIsThis: `This is the most powerful tool in human history — in your pocket. It has more computing power than the computers that sent astronauts to the moon.`,
-      howItWorks: `Inside are billions of tiny switches called transistors. When you touch the screen, you're completing electrical circuits at lightning speed.`,
-      whyItMatters: `Understanding how technology works gives you power over it. The people who built your phone aren't smarter than you — they just learned these concepts.`,
-    };
-    challengeData = { mission: 'Go tech-free', timeNeeded: '1 hour', whatToDo: 'Put your phone down for 1 hour and do something else. Notice every time you want to check it.', bonusQuestion: 'What would happen in a world without smartphones?' };
-  }
-  else if (itemLower.includes('leaf') || itemLower.includes('tree') || itemLower.includes('plant') || itemLower.includes('flower') || itemLower.includes('grass')) {
-    subject = 'Biology';
-    lessonData = {
-      whatIsThis: `This leaf is like a tiny solar panel — one of the most incredible machines nature ever built. Plants eat light. They're solar-powered food factories.`,
-      howItWorks: `Leaves have chlorophyll (the green stuff). When sunlight hits, it captures energy and mixes it with water and air. Result: sugar for the plant, oxygen for us!`,
-      whyItMatters: `Trees are the lungs of our planet. Every breath you take — thank a plant somewhere.`,
-    };
-    challengeData = { mission: 'Adopt a tree', timeNeeded: '30 min', whatToDo: 'Find a tree and visit it 3 times this week. Each time, draw or describe what you observe.', bonusQuestion: 'Why do leaves change color in fall?' };
-  }
-  else if (itemLower.includes('money') || itemLower.includes('dollar') || itemLower.includes('bill') || itemLower.includes('coin') || itemLower.includes('cash')) {
-    subject = 'Economics';
-    lessonData = {
-      whatIsThis: `This paper is valuable because we ALL agree it's valuable. That's called currency. Before money, people traded directly — "I'll give you 3 goats for that cow." But what if you had a cow and wanted a haircut? Money solves that.`,
-      howItWorks: `The government says this paper equals a certain value. You trust the government. I trust the government. We both accept it. Here's a twist: most money today isn't paper — it's numbers on a screen.`,
-      whyItMatters: `Understanding money means understanding power. Who prints it? Who decides its value? These questions help you navigate a world where money affects everything.`,
-    };
-    challengeData = { mission: 'Track money for a day', timeNeeded: '24 hours', whatToDo: 'Write down everything you see money being used for today. Add it up. What did you learn?', bonusQuestion: 'Why does the government decide what money looks like?' };
-  }
-  else if (itemLower.includes('water') || itemLower.includes('bottle') || itemLower.includes('cup')) {
-    subject = 'Science';
-    lessonData = {
-      whatIsThis: `Water is the most amazing substance on Earth. Your body is about 60% water. You can survive 30 days without food but only 3 days without water.`,
-      howItWorks: `Water is H2O — two hydrogen atoms, one oxygen. What makes it special is cohesion — water sticks to itself. That's why water forms droplets and climbs up plants.`,
-      whyItMatters: `Water is life. It regulates your body temperature, moves nutrients through you, and keeps your cells working.`,
-    };
-    challengeData = { mission: 'Water droplet experiment', timeNeeded: '15 min', whatToDo: 'Put a drop of water on a coin. Count how many drops fit before it overflows. This shows surface tension!', bonusQuestion: 'Why is water so important for life?' };
-  }
-  else if (itemLower.includes('car') || itemLower.includes('truck') || itemLower.includes('bus') || itemLower.includes('bike')) {
-    subject = 'Engineering';
-    lessonData = {
-      whatIsThis: `This is a machine that converts energy into motion. Most cars burn fuel to create controlled explosions that push pistons, which turn wheels.`,
-      howItWorks: `Fuel + spark = explosion. The explosion pushes a piston. The piston turns a crankshaft. The crankshaft turns wheels. Meanwhile, brakes use friction to slow down.`,
-      whyItMatters: `Understanding machines helps you fix them, improve them, and invent new ones.`,
-    };
-    challengeData = { mission: 'Count the machines', timeNeeded: '20 min', whatToDo: 'Count how many vehicles pass by in 10 minutes. Try to identify the energy source for each.', bonusQuestion: 'What would life be like without vehicles?' };
-  }
-  else if (itemLower.includes('shoe') || itemLower.includes('sneaker') || itemLower.includes('boot')) {
-    subject = 'Design';
-    lessonData = {
-      whatIsThis: `Shoes are engineering marvels. They protect your feet, cushion your joints, and help you move. The average person walks 150,000 miles in their lifetime — shoes make that possible.`,
-      howItWorks: `Soles cushion impact. Arch support distributes weight. Laces hold them on. Different shoes are designed for different activities.`,
-      whyItMatters: `Shoes tell stories about cultures and history. Today, shoes are fashion, function, and identity all wrapped together.`,
-    };
-    challengeData = { mission: 'Shoe investigation', timeNeeded: '15 min', whatToDo: 'Look closely at a pair of shoes. Draw the sole. What patterns do you see? Why might they be shaped that way?', bonusQuestion: 'What would happen if we walked everywhere barefoot?' };
-  }
-  else if (itemLower.includes('fridge') || itemLower.includes('refrigerator') || itemLower.includes('microwave') || itemLower.includes('oven') || itemLower.includes('washer') || itemLower.includes('dryer')) {
-    subject = 'Physics';
-    lessonData = {
-      whatIsThis: `This machine does work you used to have to do by hand. It uses scientific principles to make life easier.`,
-      howItWorks: itemLower.includes('fridge') ? `Refrigerators move heat from inside to outside using a special fluid that evaporates and condenses in a loop. It's like a heat taxi.` : `This appliance converts electrical energy into heat or motion to do useful work.`,
-      whyItMatters: `These machines changed how humans live. They gave us more free time, safer food, and enabled cities to grow.`,
-    };
-    challengeData = { mission: 'Energy detective', timeNeeded: '20 min', whatToDo: 'List all the machines in your home. Try to figure out what each one does. Which use the most electricity?', bonusQuestion: 'How did people keep food cold before refrigerators?' };
-  }
-  else if (itemLower.includes('tv') || itemLower.includes('television') || itemLower.includes('screen') || itemLower.includes('monitor') || itemLower.includes('computer')) {
-    subject = 'Technology';
-    lessonData = {
-      whatIsThis: `Screens are windows made of light. They create pictures using millions of tiny dots called pixels. Each pixel can show different colors.`,
-      howItWorks: `Your screen has thousands of pixels in a grid. Each pixel has 3 parts: red, green, and blue. By changing their brightness, the screen creates any color imaginable.`,
-      whyItMatters: `Screens are how we see information from far away. Understanding how they work helps you see technology as something you can create, not just consume.`,
-    };
-    challengeData = { mission: 'Pixel explorer', timeNeeded: '10 min', whatToDo: 'Hold your phone close to your eyes. Do you see tiny squares of color? Those are pixels! Draw what you see.', bonusQuestion: 'What was life like before screens?' };
-  }
-  else if (itemLower.includes('ball') || itemLower.includes('basketball') || itemLower.includes('football') || itemLower.includes('soccer')) {
-    subject = 'Physics';
-    lessonData = {
-      whatIsThis: `A ball is a tool for storing and transferring energy. When you throw it, you're giving it kinetic energy. When it bounces, that energy converts between motion and deformation.`,
-      howItWorks: `Balls are made from different materials for different purposes. Basketballs bounce because they're full of air — the air compresses and springs back.`,
-      whyItMatters: `Balls have been used for play, ritual, and sport for thousands of years. They're one of the simplest tools that teach us about physics.`,
-    };
-    challengeData = { mission: 'Bounce test', timeNeeded: '15 min', whatToDo: 'Find 3 different balls. Drop each from the same height. Which bounces highest? Try to figure out why.', bonusQuestion: 'What would happen if balls had no air inside?' };
-  }
-  else if (itemLower.includes('book') || itemLower.includes('magazine') || itemLower.includes('newspaper')) {
-    subject = 'History';
-    lessonData = {
-      whatIsThis: `Books are time machines. They let ideas travel across thousands of years. A book written 500 years ago can teach you something today.`,
-      howItWorks: `Books put symbols (letters) in a specific order so your brain can decode them into meaning. The same symbols arranged differently create completely different ideas.`,
-      whyItMatters: `Before books, knowledge died with people. Books let ideas outlive their creators.`,
-    };
-    challengeData = { mission: 'Book archaeology', timeNeeded: '20 min', whatToDo: 'Find an old book or look up a historical document online. How is it different from books today?', bonusQuestion: 'What would happen if all books disappeared?' };
-  }
-  else if (itemLower.includes('clock') || itemLower.includes('watch') || itemLower.includes('time')) {
-    subject = 'Math';
-    lessonData = {
-      whatIsThis: `Clocks are machines that measure time. Here's the thing — time is a human invention. The universe doesn't have "hours" or "minutes." We made those up.`,
-      howItWorks: `Analog clocks use gears or vibrations to divide time into equal parts. Digital clocks count electrical pulses. Both answer: "how long has it been since something started?"`,
-      whyItMatters: `Time is the most fair thing in the universe — everyone gets the same amount. Understanding time helps you plan and appreciate every moment.`,
-    };
-    challengeData = { mission: 'Time awareness', timeNeeded: '30 min', whatToDo: 'Guess how long 1 minute is without looking at a clock. Close your eyes and open them when you think a minute passed.', bonusQuestion: 'How did people tell time before clocks?' };
-  }
-  else if (itemLower.includes('stair') || itemLower.includes('elevator') || itemLower.includes('escalator') || itemLower.includes('ladder')) {
-    subject = 'Engineering';
-    lessonData = {
-      whatIsThis: `Stairs are one of humanity's oldest inventions. Before stairs, buildings were limited by how high a person could climb. Stairs let us build up instead of out.`,
-      howItWorks: `Each step is a comfortable height for human legs. Going up converts your energy into height. Going down converts it back. An elevator uses cables to do the same thing mechanically.`,
-      whyItMatters: `Stairs are exercise hiding in plain sight. Taking stairs instead of elevators is one of the simplest ways to stay healthy.`,
-    };
-    challengeData = { mission: 'Stair challenge', timeNeeded: '1 day', whatToDo: 'Take the stairs instead of elevators all day. Count how many flights you climb. How do you feel?', bonusQuestion: 'What if there were no stairs in buildings?' };
-  }
-  else if (itemLower.includes('pizza') || itemLower.includes('bread') || itemLower.includes('rice') || itemLower.includes('egg') || itemLower.includes('food')) {
-    subject = 'Science';
-    lessonData = {
-      whatIsThis: `Food is fuel with a story. Everything you eat was once alive and now becomes part of you. That's not gross — it's one of the most elegant systems in nature.`,
-      howItWorks: `Your body breaks down food into tiny pieces that enter your blood and travel to every cell. Cells use that energy to do everything from thinking to running.`,
-      whyItMatters: `Food connects us to nature and to each other. Family recipes and shared meals are how humans pass down traditions.`,
-    };
-    challengeData = { mission: 'Food journey', timeNeeded: '20 min', whatToDo: `Pick one food item and trace it backward: Where did it come from? What was combined? How did it get to you?`, bonusQuestion: 'What if we only ate one type of food?' };
-  }
-  else {
-    lessonData = {
-      whatIsThis: `This ${item} has more science, history, and stories than you might think. Every object was invented by someone, made somewhere, and connects to bigger ideas.`,
-      howItWorks: `Take a close look. What is it made of? How was it made? Who made it? When you ask questions like this, you activate curiosity — the engine of learning.`,
-      whyItMatters: `Everything in your world has a story. The skill of seeing the extraordinary in the ordinary? That's what smart people do.`,
-    };
-    challengeData = { mission: 'Find the science', timeNeeded: '15 min', whatToDo: `What makes ${item} work? Create a simple experiment showing this with things you have at home.`, bonusQuestion: 'What would life be like without this object?' };
-  }
-  
-  const vocabKey = ageGroup === '3-5' ? '3-5' : ageGroup === '6-8' ? '6-8' : ageGroup === '9-12' ? '9-12' : ageGroup === '13+' ? '13+' : 'all';
-  
-  const vocab: Record<string, { word: string; definition: string }[]> = {
-    '3-5': [
-      { word: 'Science', definition: 'How things work' },
-      { word: 'Energy', definition: 'The power to make things happen' },
-      { word: ' inventor', definition: 'Someone who creates new things' },
-    ],
-    '6-8': [
-      { word: 'Molecule', definition: 'The tiniest piece of any substance' },
-      { word: 'Energy', definition: 'The power to do work' },
-      { word: 'System', definition: 'Parts working together' },
-    ],
-    '9-12': [
-      { word: 'Supply chain', definition: 'How things get from source to you' },
-      { word: 'Innovation', definition: 'Using creativity to make something new' },
-      { word: 'Standardization', definition: 'Making everything the same every time' },
-    ],
-    '13+': [
-      { word: 'Supply chain', definition: 'The network producing and distributing a product' },
-      { word: 'Margins', definition: 'The difference between cost and selling price' },
-      { word: 'Scalability', definition: 'Ability to grow without losing efficiency' },
-    ],
-    'all': [
-      { word: 'Energy', definition: 'The power to make things happen' },
-      { word: 'System', definition: 'Parts working together' },
-      { word: 'Innovation', definition: 'Using creativity to make something better' },
-    ],
+  const base = challenges[Math.floor(Math.random() * challenges.length)];
+  return {
+    ...base,
+    mission: base.mission,
+    timeNeeded: base.timeNeeded,
+    whatToDo: base.whatToDo.replace(/"/g, "'"),
+    bonusQuestion: base.bonusQuestion,
   };
-  
-  const activities: Record<string, string[]> = {
-    '3-5': [`Look at ${item} together. Ask: "What does this feel like? What color is it?"`],
-    '6-8': [`Draw a picture of how ${item} works — even if you have to guess!`],
-    '9-12': [`Write a short story from the perspective of ${item}. What would it see?`],
-    '13+': [`Analyze ${item}: What problem does it solve? Who pays for it? How does it make money?`],
-    'all': [`Set a timer for 5 minutes. Find ${item === 'a leaf' ? '3 different leaves' : '3 similar items'} and compare them.`],
-  };
-  
-  const questions: Record<string, string[]> = {
-    '3-5': ['What does this remind you of?', 'If this could talk, what would it say?'],
-    '6-8': ['How does this help people?', 'What would happen if this didn\'t exist?'],
-    '9-12': ['What would life be like without this?', 'How might this be improved?'],
-    '13+': ['What economic or social factors influenced this?', 'How might this evolve in 10 years?'],
-    'all': ['What would life be like without this?', 'How might this be improved?'],
-  };
-  
-  const lesson: LessonPlan = {
-    title: item,
-    whatIsThis: lessonData.whatIsThis || '',
-    howItWorks: lessonData.howItWorks || '',
-    whyItMatters: lessonData.whyItMatters || '',
-    vocabulary: vocab[vocabKey] || vocab['all'],
-    tryThisTogether: activities[vocabKey]?.[0] || activities['all'][0],
-    askYourChild: questions[vocabKey] || questions['all'],
-    subject,
-    ageGroup: ageLabel,
-  };
-  
-  const challenge: Challenge = {
-    mission: challengeData.mission || 'Explore more',
-    timeNeeded: challengeData.timeNeeded || '10 min',
-    whatToDo: challengeData.whatToDo || `Keep exploring ${item}. What else can you discover?`,
-    bonusQuestion: challengeData.bonusQuestion || 'What questions do you still have?',
-  };
-  
-  return { lesson, challenge };
-};
-
-// Storage helpers
-const STORAGE_KEY = 'teachyoung_saved_lessons';
-
-const saveLesson = (item: string, ageGroup: string, lesson: LessonPlan, challenge: Challenge): void => {
-  try {
-    const saved = getSavedLessons();
-    const newLesson: SavedLesson = {
-      id: Date.now().toString(),
-      item,
-      ageGroup,
-      lesson,
-      challenge,
-      createdAt: new Date().toISOString(),
-    };
-    saved.unshift(newLesson);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 50))); // Max 50
-  } catch (e) {
-    console.warn('Could not save lesson', e);
-  }
-};
-
-const getSavedLessons = (): SavedLesson[] => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
-};
-
-const deleteLesson = (id: string): void => {
-  const saved = getSavedLessons().filter(l => l.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
 };
 
 // Share Card Component
-function ShareCard({ lesson, challenge, item, ageGroup }: { lesson: LessonPlan; challenge: Challenge; item: string; ageGroup: string }) {
+function ShareCard({ lesson, challenge, item }: { lesson: LessonPlan; challenge: Challenge; item: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [sharing, setSharing] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   const handleShare = useCallback(async () => {
     if (!cardRef.current) return;
@@ -310,7 +65,6 @@ function ShareCard({ lesson, challenge, item, ageGroup }: { lesson: LessonPlan; 
           text: `We just learned about ${item}! Created with TeachYoung`,
         });
       } else {
-        // Fallback: download
         const link = document.createElement('a');
         link.download = `lesson-${item}.png`;
         link.href = dataUrl;
@@ -322,15 +76,9 @@ function ShareCard({ lesson, challenge, item, ageGroup }: { lesson: LessonPlan; 
     setSharing(false);
   }, [item]);
 
-  const handleSave = () => {
-    saveLesson(item, ageGroup, lesson, challenge);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
   return (
-    <div className="space-y-4">
-      {/* Hidden share card (rendered for image generation) */}
+    <div className="space-y-3">
+      {/* Hidden share card */}
       <div className="fixed -left-[9999px] top-0" style={{ width: 600, height: 900 }}>
         <div 
           ref={cardRef}
@@ -375,11 +123,11 @@ function ShareCard({ lesson, challenge, item, ageGroup }: { lesson: LessonPlan; 
           {/* Vocabulary */}
           <div className="mb-4 p-4 rounded-xl bg-white/5">
             <h2 className="text-xs font-bold text-[#00D4FF] uppercase tracking-wide mb-2">Vocabulary</h2>
-            <div className="flex flex-wrap gap-2">
-              {lesson.vocabulary.map((v, i) => (
-                <span key={i} className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
-                  <span className="text-white/80 font-medium">{v.word}</span>
-                </span>
+            <div className="space-y-1">
+              {lesson.vocabulary?.map((v: { word: string; definition: string }, i: number) => (
+                <p key={i} className="text-sm text-white/60">
+                  <span className="text-white/80 font-medium">{v.word}</span> — {v.definition}
+                </p>
               ))}
             </div>
           </div>
@@ -408,28 +156,15 @@ function ShareCard({ lesson, challenge, item, ageGroup }: { lesson: LessonPlan; 
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        <button 
-          onClick={handleShare}
-          disabled={sharing}
-          className="flex-1 py-3 rounded-xl bg-white/10 text-white/80 text-xs font-medium flex items-center justify-center gap-2 hover:bg-white/15 transition-colors"
-        >
-          <Share2 className="w-4 h-4" />
-          {sharing ? 'Preparing...' : 'Share Card'}
-        </button>
-        <button 
-          onClick={handleSave}
-          className={`px-4 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-colors ${
-            saved 
-              ? 'bg-[#00C896]/20 text-[#00C896]' 
-              : 'bg-white/10 text-white/80 hover:bg-white/15'
-          }`}
-        >
-          <Bookmark className="w-4 h-4" />
-          {saved ? 'Saved!' : 'Save'}
-        </button>
-      </div>
+      {/* Action button */}
+      <button 
+        onClick={handleShare}
+        disabled={sharing}
+        className="w-full py-3 rounded-xl bg-white/10 text-white/80 text-xs font-medium flex items-center justify-center gap-2 hover:bg-white/15 transition-colors"
+      >
+        <Share2 className="w-4 h-4" />
+        {sharing ? 'Preparing...' : 'Share Card'}
+      </button>
     </div>
   );
 }
@@ -461,11 +196,41 @@ export default function GeneratePage() {
     if (!item.trim()) return;
     setStep('loading');
     setMode('lesson');
-    await new Promise(r => setTimeout(r, 1200));
-    const { lesson, challenge } = generateLesson(item, ageGroup);
-    setLessonPlan(lesson);
-    setChallenge(challenge);
-    setStep('lesson');
+    
+    try {
+      const response = await fetch('/api/generate-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item: item.trim(), ageGroup }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Generation failed');
+      }
+      
+      const data = await response.json();
+      const lesson = data.lesson as LessonPlan;
+      
+      lesson.title = item.trim();
+      lesson.ageGroup = `Ages ${ageGroup}`;
+      lesson.subject = lesson.subject || 'Learning';
+      
+      const generatedChallenge = generateChallenge(item.trim(), lesson);
+      setLessonPlan(lesson);
+      setChallenge(generatedChallenge);
+      setStep('lesson');
+      
+      // Save to localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('teachyoung_lessons') || '[]');
+        saved.unshift({ id: Date.now().toString(), item: item.trim(), ageGroup, lesson, challenge: generatedChallenge, createdAt: new Date().toISOString() });
+        localStorage.setItem('teachyoung_lessons', JSON.stringify(saved.slice(0, 50)));
+      } catch {}
+      
+    } catch (error) {
+      console.error('Generation error:', error);
+      setStep('input');
+    }
   };
 
   const handleTryAnother = () => {
@@ -479,7 +244,7 @@ export default function GeneratePage() {
 
   return (
     <div className="min-h-screen bg-[#0D0D1A] text-white flex flex-col">
-      {/* Minimal header */}
+      {/* Header */}
       <header className="p-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center">
@@ -652,7 +417,7 @@ export default function GeneratePage() {
                   <div className="p-4 rounded-xl bg-white/[0.04]">
                     <h2 className="text-[11px] font-bold text-[#00D4FF] uppercase tracking-wide mb-2">Vocabulary</h2>
                     <div className="space-y-1">
-                      {lessonPlan.vocabulary.map((v, i) => (
+                      {(lessonPlan.vocabulary || []).map((v: { word: string; definition: string }, i: number) => (
                         <p key={i} className="text-xs text-white/60">
                           <span className="text-white/80 font-medium">{v.word}</span> — {v.definition}
                         </p>
@@ -668,7 +433,7 @@ export default function GeneratePage() {
                   <div className="p-4 rounded-xl bg-white/[0.04]">
                     <h2 className="text-[11px] font-bold text-[#FFD700] uppercase tracking-wide mb-2">Ask your child</h2>
                     <div className="space-y-1">
-                      {lessonPlan.askYourChild.map((q, i) => (
+                      {(lessonPlan.askYourChild || []).map((q: string, i: number) => (
                         <p key={i} className="text-sm text-white/70">• {q}</p>
                       ))}
                     </div>
@@ -677,12 +442,7 @@ export default function GeneratePage() {
 
                 {/* Share card */}
                 <div className="mt-6">
-                  <ShareCard 
-                    lesson={lessonPlan} 
-                    challenge={challenge} 
-                    item={item} 
-                    ageGroup={ageGroup} 
-                  />
+                  <ShareCard lesson={lessonPlan} challenge={challenge} item={item} />
                 </div>
               </>
             )}
@@ -719,12 +479,7 @@ export default function GeneratePage() {
 
                 {/* Share card for challenge */}
                 <div className="mt-4">
-                  <ShareCard 
-                    lesson={lessonPlan} 
-                    challenge={challenge} 
-                    item={`${challenge.mission}`} 
-                    ageGroup={ageGroup} 
-                  />
+                  <ShareCard lesson={lessonPlan} challenge={challenge} item={item} />
                 </div>
               </motion.div>
             )}
