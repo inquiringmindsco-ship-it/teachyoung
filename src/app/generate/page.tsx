@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Camera, Sparkles, Zap, RotateCcw, Share2, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, Sparkles, Zap, RotateCcw, Share2, ChevronRight, Lightbulb } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 interface LessonPlan {
@@ -16,6 +16,12 @@ interface LessonPlan {
   depth: string;
 }
 
+interface QuizQuestion {
+  type: string;
+  text: string;
+  hint: string | null;
+}
+
 interface Challenge {
   mission: string;
   timeNeeded: string;
@@ -23,7 +29,7 @@ interface Challenge {
   bonusQuestion: string;
 }
 
-type Step = 'input' | 'loading' | 'result';
+type Step = 'input' | 'quiz' | 'result';
 type Depth = 'quick' | 'standard' | 'deep';
 
 const DEPTH_LABELS: Record<Depth, string> = {
@@ -48,12 +54,6 @@ const generateChallenge = (item: string): Challenge => {
     whatToDo: base.whatToDo,
     bonusQuestion: base.bonusQuestion,
   };
-};
-
-const DEPTH_PROMPTS: Record<Depth, string> = {
-  quick: 'Keep every answer to 1-2 sentences. Maximum brevity. Get to the point fast. No fluff.',
-  standard: 'Use thoughtful explanations. Relate ideas to everyday life. Include useful vocabulary.',
-  deep: 'Go deeper. Include nuances, examples, and real-world applications. Challenge assumptions.',
 };
 
 function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; depth: Depth }) {
@@ -110,38 +110,29 @@ function ShareCard({ result, item, depth }: { result: LessonPlan; item: string; 
             <p className="text-white/40 text-sm">Understanding</p>
           </div>
 
-          {/* Main content */}
-          <div className="flex-1 space-y-4">
-            <div className="p-4 rounded-xl bg-white/5">
-              <h2 className="text-xs font-medium text-white/40 mb-1">Hook</h2>
-              <p className="text-base text-white font-medium leading-relaxed">{result.hook}</p>
+          {/* Hook */}
+          {result.hook && (
+            <div className="p-3 rounded-xl bg-white/5 mb-3">
+              <p className="text-base text-white/80 leading-relaxed">"{result.hook}"</p>
             </div>
+          )}
 
-            <div className="p-4 rounded-xl bg-white/5">
+          {/* Main content */}
+          <div className="flex-1 space-y-3">
+            <div className="p-3 rounded-xl bg-white/5">
               <h2 className="text-xs font-medium text-[#FF6B35] mb-1">What is this</h2>
               <p className="text-sm text-white/70 leading-relaxed">{result.whatIsThis}</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white/5">
-              <h2 className="text-xs font-medium text-[#FFD700] mb-1">How it works</h2>
-              <p className="text-sm text-white/70 leading-relaxed">{result.howItWorks}</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white/5">
-              <h2 className="text-xs font-medium text-[#B866D6] mb-1">Why it matters</h2>
+            <div className="p-3 rounded-xl bg-white/5">
+              <h2 className="text-xs font-medium text-[#FFD700] mb-1">Why it matters</h2>
               <p className="text-sm text-white/70 leading-relaxed">{result.whyItMatters}</p>
             </div>
 
-            {result.vocabulary && result.vocabulary.length > 0 && (
-              <div className="p-4 rounded-xl bg-white/5">
-                <h2 className="text-xs font-medium text-[#00D4FF] mb-2">Key ideas</h2>
-                <div className="flex flex-wrap gap-2">
-                  {result.vocabulary.map((v, i) => (
-                    <span key={i} className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
-                      {v}
-                    </span>
-                  ))}
-                </div>
+            {result.tryThis && (
+              <div className="p-3 rounded-xl bg-[#00C896]/10 border border-[#00C896]/20">
+                <h2 className="text-xs font-medium text-[#00C896] mb-1">Try it</h2>
+                <p className="text-sm text-white/70">{result.tryThis}</p>
               </div>
             )}
           </div>
@@ -175,6 +166,8 @@ export default function GeneratePage() {
   const [depth, setDepth] = useState<Depth>('standard');
   const [result, setResult] = useState<LessonPlan | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -193,9 +186,28 @@ export default function GeneratePage() {
 
   const handleGenerate = async () => {
     if (!item.trim()) return;
-    setStep('loading');
-    setMode('explain');
     
+    // First get quiz questions
+    try {
+      const qResponse = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item: item.trim() }),
+      });
+      
+      if (!qResponse.ok) throw new Error('Questions failed');
+      const qData = await qResponse.json();
+      setQuizQuestions(qData.questions.questions || []);
+      setStep('quiz');
+    } catch (error) {
+      console.error('Questions error:', error);
+      // Skip quiz if it fails, go straight to loading lesson
+      loadLesson();
+    }
+  };
+
+  const loadLesson = async () => {
+    setMode('explain');
     try {
       const response = await fetch('/api/generate-lesson', {
         method: 'POST',
@@ -207,7 +219,6 @@ export default function GeneratePage() {
       
       const data = await response.json();
       const lesson = data.lesson as LessonPlan;
-      
       lesson.depth = DEPTH_LABELS[depth];
       
       const generatedChallenge = generateChallenge(item.trim());
@@ -228,12 +239,29 @@ export default function GeneratePage() {
     }
   };
 
+  const handleAnswer = (index: number) => {
+    const newAnswered = new Set(answeredQuestions);
+    newAnswered.add(index);
+    setAnsweredQuestions(newAnswered);
+    
+    // If all answered (or skip allowed), auto-continue after brief moment
+    if (newAnswered.size >= quizQuestions.length) {
+      setTimeout(() => loadLesson(), 600);
+    }
+  };
+
+  const handleSkip = () => {
+    loadLesson();
+  };
+
   const handleTryAnother = () => {
     setStep('input');
     setPhotoPreview(null);
     setItem('');
     setResult(null);
     setChallenge(null);
+    setQuizQuestions([]);
+    setAnsweredQuestions(new Set());
     setMode('explain');
     inputRef.current?.focus();
   };
@@ -247,7 +275,7 @@ export default function GeneratePage() {
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
         </div>
-        {step === 'result' && (
+        {step !== 'input' && (
           <button onClick={handleTryAnother} className="text-xs text-white/40 hover:text-white/60 flex items-center gap-1 transition-colors">
             <RotateCcw className="w-3 h-3" />
             New
@@ -255,7 +283,7 @@ export default function GeneratePage() {
         )}
       </header>
 
-      {/* Main — centered */}
+      {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-5">
 
         {/* INPUT STEP */}
@@ -265,13 +293,11 @@ export default function GeneratePage() {
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-lg"
           >
-            {/* Headline */}
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold tracking-tight mb-2">Understand anything<br />instantly.</h1>
               <p className="text-white/40 text-sm">Type or snap anything. Get a clear explanation.</p>
             </div>
 
-            {/* Main input */}
             <div className="space-y-3">
               <div className="relative">
                 <input 
@@ -280,7 +306,7 @@ export default function GeneratePage() {
                   value={item}
                   onChange={e => setItem(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && item.trim() && handleGenerate()}
-                  placeholder="Why is the sky blue? How does a refrigerator work? What is..." 
+                  placeholder="Fire hydrant, gravity, barcodes, elevators..." 
                   className="w-full p-4 pr-24 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-base text-white placeholder:text-white/25 focus:outline-none focus:border-[#FF6B35]/30 transition-colors text-center"
                   autoFocus
                 />
@@ -299,7 +325,6 @@ export default function GeneratePage() {
                 />
               </div>
 
-              {/* Photo preview */}
               {photoPreview && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -316,7 +341,6 @@ export default function GeneratePage() {
                 </motion.div>
               )}
 
-              {/* Depth selector — small and optional */}
               <div className="flex items-center justify-center gap-4">
                 <span className="text-white/30 text-xs">Depth:</span>
                 <div className="flex gap-1 bg-white/[0.04] p-1 rounded-xl">
@@ -336,7 +360,6 @@ export default function GeneratePage() {
                 </div>
               </div>
 
-              {/* Generate */}
               <button 
                 onClick={handleGenerate}
                 disabled={!item.trim()}
@@ -347,28 +370,78 @@ export default function GeneratePage() {
               </button>
             </div>
 
-            {/* Subtle examples */}
             <p className="text-center text-white/20 text-xs mt-6">
-              Try: fire hydrant, antibiotics, gravity, barcodes, elevators
+              Try: fire hydrant, gravity, elevators, barcodes
             </p>
           </motion.div>
         )}
 
-        {/* LOADING */}
-        {step === 'loading' && (
+        {/* QUIZ STEP */}
+        {step === 'quiz' && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center"
+            className="w-full max-w-lg"
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF6B35]/20 to-[#FFD700]/20 flex items-center justify-center mx-auto mb-4">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                className="w-8 h-8 rounded-full border-2 border-[#FFD700] border-t-transparent"
-              />
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-xl bg-[#FFD700]/10 flex items-center justify-center mx-auto mb-3">
+                <Lightbulb className="w-6 h-6 text-[#FFD700]" />
+              </div>
+              <h2 className="text-xl font-bold mb-1">Before we explain...</h2>
+              <p className="text-white/40 text-sm">Think about {item.toLowerCase()} for a second.</p>
             </div>
-            <p className="text-base font-medium text-white/70">Understanding "{item}"...</p>
+
+            <div className="space-y-3 mb-6">
+              {quizQuestions.map((q, i) => (
+                <motion.button
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  onClick={() => handleAnswer(i)}
+                  disabled={answeredQuestions.has(i)}
+                  className={`w-full p-4 rounded-xl text-left transition-all ${
+                    answeredQuestions.has(i) 
+                      ? 'bg-[#00C896]/15 border border-[#00C896]/30' 
+                      : 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.1]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                      answeredQuestions.has(i) ? 'bg-[#00C896]/20' : 'bg-white/10'
+                    }`}>
+                      {answeredQuestions.has(i) ? (
+                        <Sparkles className="w-3 h-3 text-[#00C896]" />
+                      ) : (
+                        <span className="text-xs text-white/40">{i + 1}</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm ${answeredQuestions.has(i) ? 'text-white/50' : 'text-white/80'}`}>{q.text}</p>
+                      {q.hint && !answeredQuestions.has(i) && (
+                        <p className="text-xs text-white/30 mt-1">Hint: {q.hint}</p>
+                      )}
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={handleSkip}
+                className="flex-1 py-3 rounded-xl bg-white/[0.04] text-white/50 text-sm hover:bg-white/[0.08] transition-colors"
+              >
+                Skip
+              </button>
+              <button 
+                onClick={() => loadLesson()}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A] font-medium text-sm flex items-center justify-center gap-2"
+              >
+                See what you missed
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -457,7 +530,6 @@ export default function GeneratePage() {
                   )}
                 </div>
 
-                {/* Share — below everything */}
                 <div className="mt-8 mb-2">
                   <ShareCard result={result} item={item} depth={depth} />
                 </div>
