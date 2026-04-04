@@ -393,7 +393,7 @@ export default function GeneratePage() {
                 }`}
               >
                 <Zap className="w-3 h-3" />
-                Explore
+                Try it
               </button>
             </div>
 
@@ -401,8 +401,7 @@ export default function GeneratePage() {
             {mode === 'explain' && (
               <>
                 <div className="text-center mb-6">
-                  <p className="text-[10px] text-white/30 uppercase tracking-widest">{result.depth}</p>
-                  <h1 className="text-2xl font-bold mt-1">{item}</h1>
+                  <h1 className="text-2xl font-bold">Understanding: {item}</h1>
                 </div>
 
                 <div className="space-y-4">
@@ -453,8 +452,8 @@ export default function GeneratePage() {
                   )}
                 </div>
 
-                {/* Share */}
-                <div className="mt-6">
+                {/* Share — below everything */}
+                <div className="mt-8 mb-2">
                   <ShareCard result={result} item={item} depth={depth} />
                 </div>
               </>
@@ -471,7 +470,7 @@ export default function GeneratePage() {
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center mx-auto mb-3">
                     <Zap className="w-7 h-7 text-white" />
                   </div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-widest">Explore</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-widest">Try it</p>
                   <h2 className="text-xl font-bold mt-1">{challenge.mission}</h2>
                 </div>
 
@@ -512,7 +511,7 @@ export default function GeneratePage() {
                     className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-[#0D0D1A] text-sm font-medium flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />
-                    Explore
+                    Try it
                   </button>
                 ) : (
                   <button 
