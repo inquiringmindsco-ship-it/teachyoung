@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Sparkles, Share2, ChevronRight, Lightbulb, ArrowRight, BookOpen, HelpCircle, Layers, X, CheckCircle, RefreshCw, Wand2, Aperture } from 'lucide-react';
+import { Camera, Sparkles, Share2, ChevronRight, Lightbulb, ArrowRight, BookOpen, HelpCircle, Layers, X, CheckCircle, RefreshCw, Aperture, Wand2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { useGamification } from '../hooks/useGamification';
 
@@ -30,7 +30,6 @@ type Mode = 'explain' | 'teach' | 'quiz' | 'deeper';
 function ShareCard({ result, item }: { result: LessonPlan; item: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [sharing, setSharing] = useState(false);
-
   const handleShare = useCallback(async () => {
     if (!cardRef.current) return;
     setSharing(true);
@@ -49,7 +48,6 @@ function ShareCard({ result, item }: { result: LessonPlan; item: string }) {
     } catch (e) { console.warn('Share failed', e); }
     setSharing(false);
   }, [item]);
-
   return (
     <div className="space-y-3">
       <div className="fixed -left-[9999px] top-0" style={{ width: 600, height: 750 }}>
@@ -205,47 +203,21 @@ export default function GeneratePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-[#0D0D1A] text-white flex flex-col overflow-hidden relative">
 
-      {/* === HERO BACKGROUND === */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Main gradient — sky inspired */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FFF8F0] via-white to-[#FFF5F0]" />
-        
-        {/* Large soft orbs */}
-        <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#FF6B35]/12 to-[#FFD700]/8 -translate-y-1/3 translate-x-1/4" />
-        <div className="absolute top-1/3 -left-40 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-[#00C896]/8 via-[#FFD700]/5 to-transparent -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-gradient-to-tl from-[#B866D6]/6 to-transparent translate-y-1/3 -translate-x-1/4" />
-        
-        {/* Lens flare accent */}
-        <div className="absolute top-16 right-8 w-2 h-2 rounded-full bg-[#FF6B35]/60 shadow-[0_0_40px_10px_rgba(255,107,53,0.15)]" />
-        <div className="absolute top-24 right-16 w-1 h-1 rounded-full bg-[#FFD700]/80 shadow-[0_0_20px_5px_rgba(255,215,0,0.1)]" />
-        
-        {/* Subtle grid — camera viewfinder energy */}
-        <div className="absolute inset-0 opacity-[0.015]" style={{
-          backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-          backgroundSize: '48px 48px'
-        }} />
+      {/* === AMBIENT BACKGROUND === */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0D0D1A] via-[#14142B] to-[#0D0D1A]" />
+        <div className="absolute top-0 left-1/4 right-1/4 h-[500px] bg-gradient-to-b from-[#FF6B35]/20 via-[#FF8C5A]/10 to-transparent blur-[120px] rounded-full -translate-y-1/2" />
+        <div className="absolute bottom-0 left-0 right-0 h-[400px] bg-gradient-to-t from-[#FFD700]/10 via-[#FF6B35]/5 to-transparent blur-[100px] rounded-full translate-y-1/2" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#B866D6]/5 rounded-full blur-[120px]" />
       </div>
-
-      {/* === HEADER === */}
-      <header className="relative w-full px-6 py-5 flex items-center justify-between z-10">
-        <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-xl shadow-[#FF6B35]/20">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-gray-900 font-bold text-base tracking-tight">Overstood</span>
-            <p className="text-gray-400 text-[10px] font-medium -mt-0.5">Turn the world into a lesson</p>
-          </div>
-        </motion.div>
-      </header>
 
       {/* TOASTS */}
       <AnimatePresence>
         {showDiscoveryToast && (
-          <motion.div initial={{ opacity: 0, y: -12, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.9 }} className="absolute top-20 left-1/2 -translate-x-1/2 z-50">
-            <div className="px-5 py-2.5 rounded-full bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white text-xs font-bold shadow-xl flex items-center gap-2">
+          <motion.div initial={{ opacity: 0, y: -16, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -16, scale: 0.9 }} className="absolute top-6 left-1/2 -translate-x-1/2 z-[100]">
+            <div className="px-6 py-3 rounded-full bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white text-sm font-bold shadow-2xl flex items-center gap-2">
               <span>✨</span><span>+1 Discovery</span>
             </div>
           </motion.div>
@@ -253,164 +225,137 @@ export default function GeneratePage() {
       </AnimatePresence>
       <AnimatePresence>
         {showAchievementToast && (
-          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute top-20 left-1/2 -translate-x-1/2 z-50">
-            <div className="px-5 py-2.5 rounded-full bg-gray-900 text-white text-xs font-bold shadow-xl flex items-center gap-2">
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute top-6 left-1/2 -translate-x-1/2 z-[100]">
+            <div className="px-6 py-3 rounded-full bg-white text-[#0D0D1A] text-sm font-bold shadow-2xl flex items-center gap-2">
               <span>🎉</span><span>{showAchievementToast}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* === HOME — THE CAMERA HERO === */}
+      {/* === HEADER === */}
+      <header className="relative z-10 px-6 pt-6 pb-4 flex items-center justify-between flex-shrink-0">
+        <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-lg shadow-[#FF6B35]/30">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-white font-bold text-sm tracking-tight">Overstood</span>
+        </motion.div>
+      </header>
+
+      {/* === HOME — CENTERED CAMERA APP === */}
       <AnimatePresence mode="wait">
         {view === 'home' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative flex-1 flex flex-col z-10">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="relative z-10 flex-1 flex flex-col"
+          >
+            {/* Headline — centered, top third */}
+            <div className="flex-shrink-0 text-center px-8 pt-6 pb-8">
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
+                className="text-4xl sm:text-5xl font-bold text-white tracking-tight leading-[1.1] mb-3"
+              >
+                Understand
+                <br />
+                <span className="bg-gradient-to-r from-[#FF6B35] to-[#FFD700] bg-clip-text text-transparent">
+                  what you see.
+                </span>
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+                className="text-white/50 text-base max-w-xs mx-auto"
+              >
+                Point your camera at anything and turn it into a lesson.
+              </motion.p>
+            </div>
 
-            {/* Hero text */}
-            <section className="w-full px-6 pt-10 pb-6">
-              <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-                <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 tracking-tight leading-[1.05] mb-3">
-                  Point your camera.
-                  <br />
-                  <span className="bg-gradient-to-r from-[#FF6B35] to-[#E8521A] bg-clip-text text-transparent">Learn instantly.</span>
-                </h1>
-                <p className="text-gray-500 text-lg leading-relaxed max-w-sm">
-                  Snap anything in the world and turn it into a clear explanation, a real lesson, or a quick quiz.
-                </p>
-              </motion.div>
-            </section>
+            {/* Camera button — dead center, dominant */}
+            <div className="flex-1 flex flex-col items-center justify-center px-8 pb-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+                className="relative"
+              >
+                {/* Outer glow rings */}
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.08, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-0 rounded-full bg-[#FF6B35]/20 blur-[30px]"
+                />
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.04, 0.15] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                  className="absolute inset-0 rounded-full bg-[#FFD700]/10 blur-[40px]"
+                />
 
-            {/* === THE MAIN CAMERA ACTION — MASSIVE === */}
-            <section className="w-full px-6 pb-5">
-              <motion.div initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}>
-                
-                {/* Primary camera card — huge and alive */}
+                {/* Main camera button */}
                 <motion.button
                   onClick={() => fileInputRef.current?.click()}
-                  whileHover={{ scale: 1.015 }}
-                  whileTap={{ scale: 0.985 }}
-                  className="w-full relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0D0D1A] via-[#1A1A2E] to-[#16162A] p-14 flex flex-col items-center justify-center shadow-2xl shadow-black/20"
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="relative w-40 h-40 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] flex flex-col items-center justify-center shadow-2xl shadow-[#FF6B35]/40"
                 >
-                  {/* Animated lens rings */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <motion.div 
-                      animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.04, 0.12] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                      className="w-52 h-52 rounded-full border border-white/10" 
-                    />
-                    <motion.div 
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.02, 0.08] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-                      className="absolute w-72 h-72 rounded-full border border-white/8" 
-                    />
-                    <motion.div 
-                      animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.01, 0.05] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
-                      className="absolute w-96 h-96 rounded-full border border-white/5" 
-                    />
-                  </div>
+                  {/* Inner aperture rings */}
+                  <div className="absolute inset-0 rounded-full border border-white/20" />
+                  <div className="absolute inset-[12px] rounded-full border border-white/10" />
 
-                  {/* Lens icon */}
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                    className="relative mb-6"
-                  >
-                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[#FF6B35]/30 to-[#FFD700]/20 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                      <Aperture className="w-14 h-14 text-white" />
-                    </div>
-                  </motion.div>
-
-                  {/* CTA text */}
-                  <p className="relative text-white font-bold text-3xl mb-2 tracking-tight">Snap to Learn</p>
-                  <p className="relative text-white/50 text-base font-medium">Point at anything in the world</p>
-
-                  {/* Corner accents — viewfinder energy */}
-                  <div className="absolute top-5 left-5 w-8 h-8 border-l-2 border-t-2 border-white/20 rounded-tl-lg" />
-                  <div className="absolute top-5 right-5 w-8 h-8 border-r-2 border-t-2 border-white/20 rounded-tr-lg" />
-                  <div className="absolute bottom-5 left-5 w-8 h-8 border-l-2 border-b-2 border-white/20 rounded-bl-lg" />
-                  <div className="absolute bottom-5 right-5 w-8 h-8 border-r-2 border-b-2 border-white/20 rounded-br-lg" />
+                  <Camera className="w-14 h-14 text-white mb-1" />
+                  <span className="text-white font-bold text-sm">Snap</span>
                 </motion.button>
 
                 <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
               </motion.div>
-            </section>
 
-            {/* === SECONDARY — TYPING FALLBACK === */}
-            <section className="w-full px-6 pb-8">
-              <motion.div 
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="max-w-md mx-auto"
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-white/60 text-sm font-medium mt-5"
               >
-                {/* Subtle divider */}
-                <div className="flex items-center gap-4 mb-5">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-gray-400 text-sm font-medium">or ask a question</span>
-                  <div className="flex-1 h-px bg-gray-200" />
-                </div>
+                Tap to open camera
+              </motion.p>
+            </div>
 
-                {/* Glass input */}
-                <div className="relative">
-                  <input
-                    ref={textInputRef}
-                    type="text"
-                    placeholder="Ask anything instead..."
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
-                        handleCapture((e.target as HTMLInputElement).value.trim());
-                      }
-                    }}
-                    className="w-full px-6 py-4.5 rounded-2xl bg-white border border-gray-200 text-gray-900 text-base placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B35]/40 focus:ring-4 focus:ring-[#FF6B35]/10 shadow-sm shadow-gray-200/80 transition-all"
-                  />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      const val = textInputRef.current?.value.trim();
-                      if (val) handleCapture(val);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-3.5 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white shadow-lg hover:shadow-xl transition-shadow"
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.button>
-                </div>
-              </motion.div>
-            </section>
-
-            {/* === WHAT YOU CAN EXPLORE === */}
-            <section className="w-full px-6 pb-12">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="max-w-md mx-auto"
-              >
-                <p className="text-center text-gray-400 text-sm font-medium mb-5">What can you explore?</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { icon: '🚒', label: 'How things work', sub: 'from fire hydrants to engines' },
-                    { icon: '🌱', label: 'How nature works', sub: 'from seeds to weather' },
-                    { icon: '🏛️', label: 'How history connects', sub: 'from ancient to modern' },
-                    { icon: '💡', label: 'How ideas form', sub: 'from science to everyday' },
-                  ].map((card, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + i * 0.07 }}
-                      className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm"
-                    >
-                      <span className="text-2xl mb-2 block">{card.icon}</span>
-                      <p className="text-gray-900 text-sm font-semibold mb-0.5">{card.label}</p>
-                      <p className="text-gray-400 text-xs leading-relaxed">{card.sub}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </section>
-
+            {/* Text input — bottom, glass style */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex-shrink-0 px-8 pb-10"
+            >
+              <div className="relative">
+                <input
+                  ref={textInputRef}
+                  type="text"
+                  placeholder="Ask instead..."
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
+                      handleCapture((e.target as HTMLInputElement).value.trim());
+                    }
+                  }}
+                  className="w-full px-5 py-4 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] text-white text-base placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/[0.12] transition-all"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const val = textInputRef.current?.value.trim();
+                    if (val) handleCapture(val);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white shadow-lg"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -418,81 +363,87 @@ export default function GeneratePage() {
       {/* === MODE SELECT === */}
       <AnimatePresence mode="wait">
         {view === 'mode' && (
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} className="relative flex-1 flex flex-col z-10 px-6 pt-6">
-            
-            <button onClick={handleTryAnother} className="flex items-center gap-2 text-gray-400 text-sm hover:text-gray-600 transition-colors mb-5 self-start">
-              <X className="w-4 h-4" />
-              <span>Start over</span>
-            </button>
+          <motion.div 
+            initial={{ opacity: 0, y: 24 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -24 }}
+            className="relative z-10 flex-1 flex flex-col overflow-y-auto"
+          >
+            {/* Top bar */}
+            <div className="flex-shrink-0 px-6 pt-6 pb-4 flex items-center justify-between">
+              <button onClick={handleTryAnother} className="flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm">
+                <X className="w-4 h-4" />
+                <span>Start over</span>
+              </button>
+            </div>
 
+            {/* Image + subject */}
             {photoPreview && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative rounded-[1.5rem] overflow-hidden mb-6 shadow-xl">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex-shrink-0 mx-6 rounded-3xl overflow-hidden shadow-2xl"
+              >
                 <img src={photoPreview} alt="Captured" className="w-full h-48 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </motion.div>
             )}
 
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="text-center mb-7">
-              <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mb-1">You captured</p>
-              <h2 className="text-3xl font-bold text-gray-900 capitalize">{capturedSubject}</h2>
-            </motion.div>
+            {/* Subject text */}
+            <div className="flex-shrink-0 text-center px-6 pt-5 pb-1">
+              <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-1">You captured</p>
+              <h2 className="text-3xl font-bold text-white capitalize">{capturedSubject}</h2>
+            </div>
 
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="text-center text-gray-500 text-base mb-7">
+            <p className="flex-shrink-0 text-center text-white/40 text-sm px-6 pt-2 pb-6">
               What would you like to do?
-            </motion.p>
+            </p>
 
-            <div className="space-y-3 pb-6">
+            {/* Action cards */}
+            <div className="flex-1 px-6 pb-8 space-y-3">
               
-              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('explain')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#FF6B35]/20 shadow-sm hover:shadow-lg hover:border-[#FF6B35]/40 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FF6B35]/15 to-[#FF6B35]/5 flex items-center justify-center flex-shrink-0">
-                    <Lightbulb className="w-7 h-7 text-[#FF6B35]" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-bold text-gray-900 text-lg mb-0.5">Explain it simply</p>
-                    <p className="text-gray-500 text-sm">Quick, clear answer in seconds</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} whileHover={{ scale: 1.02, x: 8 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('explain')} className="w-full p-5 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.1] hover:bg-white/[0.1] hover:border-white/[0.2] transition-all flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF6B35]/30 to-[#FF6B35]/10 flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="w-6 h-6 text-[#FF6B35]" />
                 </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-white text-base mb-0.5">Explain it simply</p>
+                  <p className="text-white/40 text-sm">Quick, clear answer</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/30" />
               </motion.button>
 
-              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('teach')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#FFD700]/20 shadow-sm hover:shadow-lg hover:border-[#FFD700]/40 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FFD700]/15 to-[#FFD700]/5 flex items-center justify-center flex-shrink-0">
-                    <BookOpen className="w-7 h-7 text-[#FFD700]" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-bold text-gray-900 text-lg mb-0.5">Teach me more</p>
-                    <p className="text-gray-500 text-sm">Full lesson with real context</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.28 }} whileHover={{ scale: 1.02, x: 8 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('teach')} className="w-full p-5 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.1] hover:bg-white/[0.1] hover:border-white/[0.2] transition-all flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FFD700]/30 to-[#FFD700]/10 flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-6 h-6 text-[#FFD700]" />
                 </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-white text-base mb-0.5">Teach me more</p>
+                  <p className="text-white/40 text-sm">Full lesson with context</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/30" />
               </motion.button>
 
-              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('quiz')} className="w-full p-5 rounded-2xl bg-white border-2 border-[#00C896]/20 shadow-sm hover:shadow-lg hover:border-[#00C896]/40 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00C896]/15 to-[#00C896]/5 flex items-center justify-center flex-shrink-0">
-                    <HelpCircle className="w-7 h-7 text-[#00C896]" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-bold text-gray-900 text-lg mb-0.5">Quiz me</p>
-                    <p className="text-gray-500 text-sm">Test what you know</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.36 }} whileHover={{ scale: 1.02, x: 8 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('quiz')} className="w-full p-5 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.1] hover:bg-white/[0.1] hover:border-white/[0.2] transition-all flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00C896]/30 to-[#00C896]/10 flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="w-6 h-6 text-[#00C896]" />
                 </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-white text-base mb-0.5">Quiz me</p>
+                  <p className="text-white/40 text-sm">Test what you know</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/30" />
               </motion.button>
 
-              <motion.button initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }} whileHover={{ scale: 1.02, x: 6 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('deeper')} className="w-full p-5 rounded-2xl bg-gray-900 shadow-xl hover:shadow-2xl transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                    <Layers className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-bold text-white text-lg mb-0.5">Explore deeper</p>
-                    <p className="text-white/50 text-sm">Comprehensive breakdown</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-white/30" />
+              <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.44 }} whileHover={{ scale: 1.02, x: 8 }} whileTap={{ scale: 0.98 }} onClick={() => selectMode('deeper')} className="w-full p-5 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.1] hover:bg-white/[0.1] hover:border-white/[0.2] transition-all flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#B866D6]/30 to-[#B866D6]/10 flex items-center justify-center flex-shrink-0">
+                  <Layers className="w-6 h-6 text-[#B866D6]" />
                 </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-white text-base mb-0.5">Explore deeper</p>
+                  <p className="text-white/40 text-sm">Comprehensive breakdown</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/30" />
               </motion.button>
 
             </div>
@@ -503,15 +454,15 @@ export default function GeneratePage() {
       {/* === LOADING === */}
       <AnimatePresence>
         {loading && view !== 'home' && view !== 'mode' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col items-center justify-center px-6 z-10">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative z-10 flex-1 flex flex-col items-center justify-center px-8">
             <motion.div initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="text-center">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[#FF6B35]/10 to-[#FFD700]/10 flex items-center justify-center mx-auto mb-6">
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}>
-                  <Sparkles className="w-12 h-12 text-[#FF6B35]" />
+              <div className="w-24 h-24 rounded-full bg-white/[0.06] backdrop-blur-sm border border-white/[0.1] flex items-center justify-center mx-auto mb-6">
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
+                  <Sparkles className="w-10 h-10 text-[#FF6B35]" />
                 </motion.div>
               </div>
-              <p className="text-gray-800 font-bold text-xl mb-1">{loadingMessage || 'Getting curious...'}</p>
-              <p className="text-gray-400 text-sm">Almost there</p>
+              <p className="text-white font-bold text-xl mb-1">{loadingMessage || 'Getting curious...'}</p>
+              <p className="text-white/40 text-sm">Almost there</p>
             </motion.div>
           </motion.div>
         )}
@@ -520,14 +471,14 @@ export default function GeneratePage() {
       {/* === QUIZ === */}
       <AnimatePresence mode="wait">
         {!loading && view === 'quiz' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative flex-1 flex flex-col z-10 px-6 py-6">
-            <div className="max-w-md mx-auto w-full">
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#00C896]/20 to-[#00C896]/5 flex items-center justify-center mx-auto mb-4">
-                  <HelpCircle className="w-8 h-8 text-[#00C896]" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative z-10 flex-1 flex flex-col overflow-y-auto">
+            <div className="flex-1 px-6 py-6 max-w-md mx-auto w-full">
+              <div className="text-center mb-7">
+                <div className="w-14 h-14 rounded-full bg-[#00C896]/20 border border-[#00C896]/30 flex items-center justify-center mx-auto mb-4">
+                  <HelpCircle className="w-7 h-7 text-[#00C896]" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">Quiz time</h2>
-                <p className="text-gray-500 text-sm">Think about {capturedSubject.toLowerCase()}...</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Quiz time</h2>
+                <p className="text-white/40 text-sm">Think about {capturedSubject.toLowerCase()}...</p>
               </div>
               <div className="space-y-3 mb-6">
                 {quizQuestions.map((q, i) => {
@@ -538,16 +489,16 @@ export default function GeneratePage() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.08 }}
-                      className={`rounded-2xl transition-all ${answered ? q.type === 'intuition' ? 'bg-[#FFD700]/10 border-2 border-[#FFD700]/30' : 'bg-[#00C896]/10 border-2 border-[#00C896]/20' : 'bg-white border-2 border-gray-100'}`}
+                      className={`rounded-2xl transition-all ${answered ? q.type === 'intuition' ? 'bg-[#FFD700]/10 border border-[#FFD700]/30' : 'bg-[#00C896]/10 border border-[#00C896]/20' : 'bg-white/[0.06] border border-white/[0.1]'}`}
                     >
                       <button onClick={() => !answered && handleAnswer(i)} disabled={answered} className="w-full p-4 text-left">
                         <div className="flex items-start gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${answered ? q.type === 'intuition' ? 'bg-[#FFD700]/20' : 'bg-[#00C896]/20' : 'bg-gray-100'}`}>
-                            {answered ? <CheckCircle className={`w-5 h-5 ${q.type === 'intuition' ? 'text-[#FFD700]' : 'text-[#00C896]'}`} /> : <span className="text-sm font-bold text-gray-400">{i + 1}</span>}
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${answered ? q.type === 'intuition' ? 'bg-[#FFD700]/20' : 'bg-[#00C896]/20' : 'bg-white/[0.08]'}`}>
+                            {answered ? <CheckCircle className={`w-4 h-4 ${q.type === 'intuition' ? 'text-[#FFD700]' : 'text-[#00C896]'}`} /> : <span className="text-xs font-bold text-white/40">{i + 1}</span>}
                           </div>
                           <div className="flex-1">
-                            <p className={`text-sm leading-relaxed ${answered ? 'text-gray-400' : 'text-gray-800'}`}>{q.text}</p>
-                            {!answered && q.hint && <p className="text-xs text-gray-400 mt-1.5">💡 {q.hint}</p>}
+                            <p className={`text-sm leading-relaxed ${answered ? 'text-white/40' : 'text-white/90'}`}>{q.text}</p>
+                            {!answered && q.hint && <p className="text-xs text-white/30 mt-1.5">💡 {q.hint}</p>}
                           </div>
                         </div>
                       </button>
@@ -555,7 +506,7 @@ export default function GeneratePage() {
                         <div className="px-4 pb-4">
                           <div className="p-3 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/20">
                             <p className="text-[10px] font-bold text-[#FFD700] uppercase tracking-wider mb-1">Actually</p>
-                            <p className="text-sm text-gray-700">{q.answer}</p>
+                            <p className="text-sm text-white/80">{q.answer}</p>
                           </div>
                         </div>
                       )}
@@ -563,7 +514,7 @@ export default function GeneratePage() {
                   );
                 })}
               </div>
-              <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} onClick={loadLesson} className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
+              <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} onClick={loadLesson} className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#FFD700] text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B35]/20">
                 See the full explanation
                 <ChevronRight className="w-5 h-5" />
               </motion.button>
@@ -575,74 +526,72 @@ export default function GeneratePage() {
       {/* === RESULT === */}
       <AnimatePresence mode="wait">
         {!loading && view === 'result' && result && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative flex-1 flex flex-col z-10">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative z-10 flex-1 flex flex-col overflow-hidden">
 
             {/* Result header */}
-            <div className="w-full px-6 pt-5 pb-4 bg-white border-b border-gray-100">
-              <div className="max-w-md mx-auto">
-                <button onClick={handleTryAnother} className="flex items-center gap-2 text-gray-400 text-sm hover:text-gray-600 transition-colors mb-4">
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Try another</span>
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-xl shadow-[#FF6B35]/20">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900 capitalize">{capturedSubject}</h1>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">{result.depth} · Overstood</p>
-                  </div>
+            <div className="flex-shrink-0 px-6 pt-5 pb-4 bg-white/[0.03] border-b border-white/[0.06]">
+              <button onClick={handleTryAnother} className="flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm mb-4">
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Try another</span>
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF6B35] to-[#FFD700] flex items-center justify-center shadow-lg shadow-[#FF6B35]/30 flex-shrink-0">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white capitalize">{capturedSubject}</h1>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest">{result.depth} · Overstood</p>
                 </div>
               </div>
             </div>
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-md mx-auto px-6 py-5 space-y-3">
+              <div className="px-6 py-5 space-y-3 max-w-md mx-auto">
 
                 {result.hook && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl bg-gradient-to-r from-[#FF6B35]/10 to-[#FFD700]/5 border border-[#FF6B35]/15">
-                    <p className="text-base text-gray-800 font-medium leading-relaxed">"{result.hook}"</p>
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl bg-gradient-to-r from-[#FF6B35]/15 to-[#FFD700]/10 border border-[#FF6B35]/20">
+                    <p className="text-base text-white/90 font-medium leading-relaxed">"{result.hook}"</p>
                   </motion.div>
                 )}
 
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="p-5 rounded-2xl bg-white/[0.05] border border-white/[0.08]">
                   <h2 className="text-[10px] font-bold text-[#FF6B35] uppercase tracking-wider mb-2">What is this</h2>
-                  <p className="text-sm text-gray-700 leading-relaxed">{result.whatIsThis}</p>
+                  <p className="text-sm text-white/70 leading-relaxed">{result.whatIsThis}</p>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-5 rounded-2xl bg-white/[0.05] border border-white/[0.08]">
                   <h2 className="text-[10px] font-bold text-[#FFD700] uppercase tracking-wider mb-2">How it works</h2>
-                  <p className="text-sm text-gray-700 leading-relaxed">{result.howItWorks}</p>
+                  <p className="text-sm text-white/70 leading-relaxed">{result.howItWorks}</p>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-5 rounded-2xl bg-white/[0.05] border border-white/[0.08]">
                   <h2 className="text-[10px] font-bold text-[#B866D6] uppercase tracking-wider mb-2">Why it matters</h2>
-                  <p className="text-sm text-gray-700 leading-relaxed">{result.whyItMatters}</p>
+                  <p className="text-sm text-white/70 leading-relaxed">{result.whyItMatters}</p>
                 </motion.div>
 
                 {result.vocabulary && result.vocabulary.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 rounded-2xl bg-white/[0.05] border border-white/[0.08]">
                     <h2 className="text-[10px] font-bold text-[#00D4FF] uppercase tracking-wider mb-3">Key ideas</h2>
                     <div className="flex flex-wrap gap-2">
                       {result.vocabulary.map((v, i) => (
-                        <span key={i} className="text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-xl font-medium">{v}</span>
+                        <span key={i} className="text-xs text-white/60 bg-white/[0.06] px-3 py-1.5 rounded-xl font-medium border border-white/[0.08]">{v}</span>
                       ))}
                     </div>
                   </motion.div>
                 )}
 
                 {result.tryThis && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="p-5 rounded-2xl bg-[#00C896]/8 border border-[#00C896]/20">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="p-5 rounded-2xl bg-[#00C896]/10 border border-[#00C896]/20">
                     <h2 className="text-[10px] font-bold text-[#00C896] uppercase tracking-wider mb-2">Try it</h2>
-                    <p className="text-sm text-gray-700 leading-relaxed">{result.tryThis}</p>
+                    <p className="text-sm text-white/70 leading-relaxed">{result.tryThis}</p>
                   </motion.div>
                 )}
 
                 {result.question && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl bg-gray-50 border border-gray-100">
-                    <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Question to consider</h2>
-                    <p className="text-sm text-gray-600 leading-relaxed">{result.question}</p>
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+                    <h2 className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-2">Question to consider</h2>
+                    <p className="text-sm text-white/50 leading-relaxed">{result.question}</p>
                   </motion.div>
                 )}
 
@@ -651,11 +600,11 @@ export default function GeneratePage() {
                 </motion.div>
 
                 {/* Explore more */}
-                <div className="pt-5 pb-6">
-                  <p className="text-center text-[10px] text-gray-400 uppercase tracking-widest mb-3">Explore more</p>
+                <div className="pt-4 pb-6">
+                  <p className="text-center text-[10px] text-white/30 uppercase tracking-widest mb-3">Explore more</p>
                   <div className="grid grid-cols-2 gap-2">
                     {(['explain', 'teach', 'quiz', 'deeper'] as Mode[]).filter(m => m !== mode).map(m => (
-                      <button key={m} onClick={() => selectMode(m)} className="py-3 px-3 rounded-2xl bg-white border border-gray-200 text-gray-600 text-xs font-semibold hover:border-[#FF6B35]/40 hover:text-[#FF6B35] hover:shadow-md transition-all">
+                      <button key={m} onClick={() => selectMode(m)} className="py-3 px-3 rounded-2xl bg-white/[0.06] border border-white/[0.1] text-white/50 text-xs font-medium hover:bg-white/[0.1] hover:text-white/70 transition-all">
                         {m === 'explain' ? '⚡ Explain it' : m === 'teach' ? '📖 Teach me' : m === 'quiz' ? '❓ Quiz me' : '🔍 Explore deeper'}
                       </button>
                     ))}
