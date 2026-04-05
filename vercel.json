@@ -1,3 +1,4 @@
 {
+  "name": "overstood-camera",
   "installCommand": "npm install --legacy-peer-deps"
 }
