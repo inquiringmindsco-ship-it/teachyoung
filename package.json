@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@canvasjs/react-charts": "^1.0.2",
+    "@supabase/supabase-js": "^2.103.0",
     "@tremor/react": "^3.18.7",
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",

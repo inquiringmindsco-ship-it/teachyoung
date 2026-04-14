@@ -1,4 +1,11 @@
 {
-  "name": "overstood-camera",
-  "installCommand": "npm install --legacy-peer-deps"
+  "headers": [
+    {
+      "source": "/api/speak",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Content-Type", "value": "audio/mpeg" }
+      ]
+    }
+  ]
 }
