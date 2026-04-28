@@ -15,12 +15,32 @@ export async function GET(req: NextRequest) {
 
   const limit = parseInt(req.nextUrl.searchParams.get('limit') || '20');
 
-  const { data: lessons, error } = await supabase
+  const typeFilter = req.nextUrl.searchParams.get('type'); // 'lesson' | 'repurpose' | null
+
+  let query = supabase
     .from('teachyoung_lessons')
-    .select('id, subject, image_url, depth_mode, created_at')
+    .select('id, subject, image_url, depth_mode, created_at, type, lesson_data')
     .eq('lk_id', session.lkId)
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  if (typeFilter === 'lesson' || typeFilter === 'repurpose') {
+    query = query.eq('type', typeFilter);
+  }
+
+  let { data: lessons, error } = await query;
+
+  // Backwards compat: if `type` column missing, retry without it.
+  if (error && /column .*type/i.test(error.message || '')) {
+    const retry = await supabase
+      .from('teachyoung_lessons')
+      .select('id, subject, image_url, depth_mode, created_at, lesson_data')
+      .eq('lk_id', session.lkId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    lessons = (retry.data || []).map((l: any) => ({ ...l, type: 'lesson' as const }));
+    error = retry.error;
+  }
 
   if (error) {
     return NextResponse.json({ error: 'Failed to load' }, { status: 500 });

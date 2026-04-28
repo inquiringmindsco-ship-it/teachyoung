@@ -35,3 +35,34 @@ export interface Student {
   age: number;
   progress: Record<Subject, number>;
 }
+
+// ─── Overstood Repurpose Mode ─────────────────────────────────────
+export type OverstoodMode = 'learn' | 'repurpose';
+
+export type RepurposeDifficulty = 'Easy' | 'Medium' | 'Advanced';
+
+export interface RepurposeIdea {
+  title: string;
+  difficulty: RepurposeDifficulty;
+  estimatedTime: string;
+  materials: string[];
+  steps: string[];
+  safetyNotes: string;
+}
+
+export interface RepurposePlan {
+  whatItIs: string;
+  ideas: RepurposeIdea[];
+  tags: string[];
+}
+
+// Saved record (returned from /api/lessons/history)
+export interface SavedLessonRecord {
+  id: string;
+  subject: string;
+  image_url: string | null;
+  depth_mode: string;
+  created_at: string;
+  type?: 'lesson' | 'repurpose';
+  lesson_data?: unknown;
+}

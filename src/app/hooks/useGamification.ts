@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+export type DiscoveryType = 'lesson' | 'project';
+
 interface TopicEntry {
   topic: string;
   timestamp: number;
-  completed: boolean; // quiz completed
+  completed: boolean; // quiz completed (lesson) or marked done (project)
+  type?: DiscoveryType;
 }
 
 interface GamificationState {
@@ -128,11 +131,12 @@ export function useGamification() {
     }
   }, [state]);
 
-  const addDiscovery = useCallback((topic: string, quizCompleted = false) => {
+  const addDiscovery = useCallback((topic: string, quizCompleted = false, type: DiscoveryType = 'lesson') => {
     const entry: TopicEntry = {
       topic,
       timestamp: Date.now(),
       completed: quizCompleted,
+      type,
     };
 
     const newCount = state.discoveries + 1;

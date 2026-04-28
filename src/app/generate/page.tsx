@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, ArrowRight, ChevronDown, ChevronUp, Zap, Eye, Wrench, RotateCcw, Share2, Check, X, Bookmark, Volume2, Lock } from 'lucide-react';
+import { Camera, ArrowRight, ChevronDown, ChevronUp, Zap, Eye, Wrench, RotateCcw, Share2, Check, X, Bookmark, Volume2, Lock, AlertTriangle } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { useGamification } from '../hooks/useGamification';
 import { getCuratedRelated } from '../hooks/useDiscoveryPaths';
@@ -386,18 +386,43 @@ function ShareCard({ result, item }: { result: LessonPlan; item: string }) {
 }
 
 // ─── Main Page ───────────────────────────────────────────────────
+type Mode = 'learn' | 'repurpose';
+
+interface RepurposeResult {
+  object: string;
+  material: string;
+  ideas: Array<{
+    type: 'easy' | 'useful' | 'creative';
+    title: string;
+    description: string;
+    difficulty: 'Easy' | 'Medium' | 'Advanced';
+    time: string;
+    materials: string[];
+    steps: string[];
+    safety: string[];
+  }>;
+  recyclingOptions: {
+    canRecycle: boolean;
+    howToRecycle: string;
+    alternatives: string[];
+  };
+}
+
 export default function GeneratePage() {
   const [input, setInput] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [subject, setSubject] = useState('');
   const [depth, setDepth] = useState<'quick' | 'standard' | 'deep'>('standard');
+  const [mode, setMode] = useState<Mode>('learn');
   const [result, setResult] = useState<LessonPlan | null>(null);
+  const [repurposeResult, setRepurposeResult] = useState<RepurposeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [topicChain, setTopicChain] = useState<string[]>([]);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [showStreak, setShowStreak] = useState(false);
+  const [savedToProjects, setSavedToProjects] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -440,9 +465,34 @@ export default function GeneratePage() {
   const generate = useCallback(async (item: string, imageData?: string | null) => {
     setSubject(item);
     setLoading(true);
-    setLoadingMessage('Unlocking');
     setError('');
     setQuizCompleted(false);
+    setSavedToProjects(false);
+
+    if (mode === 'repurpose') {
+      setLoadingMessage('Analyzing');
+      try {
+        const res = await fetch('/api/generate-repurpose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item }),
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const repurpose = data.result as RepurposeResult;
+        setRepurposeResult(repurpose);
+        if (imageData) setPhotoPreview(imageData);
+        addDiscovery(item, false);
+        setTopicChain(prev => [...prev, item]);
+      } catch {
+        setError('Could not generate repurpose ideas right now. Try again.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoadingMessage('Unlocking');
     try {
       const res = await fetch('/api/generate-lesson', {
         method: 'POST',
@@ -456,24 +506,22 @@ export default function GeneratePage() {
       if (imageData) setPhotoPreview(imageData);
       addDiscovery(item, false);
 
-      // Try to save lesson to server (fire-and-forget, local fallback always works)
       if (authenticated) {
         fetch('/api/lessons/save', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ subject: item, imageUrl: imageData || null, lessonData: lesson, depthMode: depth }),
-        }).catch(() => {}); // ignore errors — local state is source of truth
+        }).catch(() => {});
       }
 
-      // Add to chain
       setTopicChain(prev => [...prev, item]);
     } catch {
       setError('Could not generate right now. Try again.');
     } finally {
       setLoading(false);
     }
-  }, [depth, addDiscovery, authenticated]);
+  }, [mode, depth, addDiscovery, authenticated]);
 
   const analyzeImage = useCallback(async (imageData: string, file?: File) => {
     setPhotoPreview(imageData);
@@ -538,9 +586,11 @@ export default function GeneratePage() {
     setSubject('');
     setPhotoPreview(null);
     setResult(null);
+    setRepurposeResult(null);
     setError('');
     setDepth('standard');
     setQuizCompleted(false);
+    setSavedToProjects(false);
     inputRef.current?.focus();
   };
 
@@ -695,6 +745,44 @@ export default function GeneratePage() {
               </motion.div>
             )}
 
+            {/* Mode Selector */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.5 }}
+              style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+              {(['learn', 'repurpose'] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: 100,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    fontFamily: 'inherit',
+                    background: mode === m ? '#FF6B35' : 'rgba(255,255,255,0.05)',
+                    color: mode === m ? '#fff' : '#666',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {m === 'learn' ? (
+                    <>
+                      <Eye style={{ width: 14, height: 14 }} />
+                      Learn
+                    </>
+                  ) : (
+                    <>
+                      <Wrench style={{ width: 14, height: 14 }} />
+                      Repurpose
+                    </>
+                  )}
+                </button>
+              ))}
+            </motion.div>
+
             {/* Input */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.5 }}
               style={{ background: '#0F0F13', borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', marginBottom: 12 }}>
@@ -705,7 +793,7 @@ export default function GeneratePage() {
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                  placeholder="What do you want to understand?"
+                  placeholder={mode === 'learn' ? "What do you want to understand?" : "What object do you want to repurpose?"}
                   style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 15, color: '#F5F5F7', fontFamily: 'inherit' }}
                   autoFocus
                 />
@@ -714,21 +802,23 @@ export default function GeneratePage() {
                 </button>
                 <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', padding: '10px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', gap: 8 }}>
-                <span style={{ fontSize: 11, color: '#333', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Depth</span>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {(['quick', 'standard', 'deep'] as const).map(d => (
-                    <button key={d} onClick={() => setDepth(d)} style={{
-                      padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                      border: 'none', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
-                      background: depth === d ? '#FF6B35' : 'rgba(255,255,255,0.05)',
-                      color: depth === d ? '#fff' : '#444',
-                    }}>
-                      {d.charAt(0).toUpperCase() + d.slice(1)}
-                    </button>
-                  ))}
+              {mode === 'learn' && (
+                <div style={{ display: 'flex', alignItems: 'center', padding: '10px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: '#333', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Depth</span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(['quick', 'standard', 'deep'] as const).map(d => (
+                      <button key={d} onClick={() => setDepth(d)} style={{
+                        padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
+                        border: 'none', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
+                        background: depth === d ? '#FF6B35' : 'rgba(255,255,255,0.05)',
+                        color: depth === d ? '#fff' : '#444',
+                      }}>
+                        {d.charAt(0).toUpperCase() + d.slice(1)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
 
             <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.24 }}
@@ -758,7 +848,10 @@ export default function GeneratePage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} style={{ marginTop: 56 }}>
               <p style={{ fontSize: 11, color: '#2A2A2A', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 18, fontWeight: 600 }}>Try these</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                {['Why is the sky blue?', 'How do elevators work?', 'What is a barcode?', 'Why do we dream?'].map(ex => (
+                {(mode === 'learn'
+                  ? ['Why is the sky blue?', 'How do elevators work?', 'What is a barcode?', 'Why do we dream?']
+                  : ['Glass jar', 'Old t-shirt', 'Plastic bottle', 'Cardboard box']
+                ).map(ex => (
                   <button key={ex} onClick={() => { setInput(ex); inputRef.current?.focus(); }}
                     style={{ padding: '8px 16px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.07)', background: 'transparent', color: '#555', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
                     {ex}
@@ -913,6 +1006,213 @@ export default function GeneratePage() {
                 Share what you understood
               </button>
             </motion.div>
+
+          </motion.div>
+        )}
+
+        {/* ── REPURPOSE RESULT STATE ── */}
+        {repurposeResult && !loading && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+            style={{ paddingTop: 56, paddingBottom: 100 }}>
+
+            {/* Photo */}
+            {photoPreview && (
+              <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
+                style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 32 }}>
+                <img src={photoPreview} alt="Your capture" style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 280 }} />
+              </motion.div>
+            )}
+
+            {/* Object Header */}
+            <div style={{ textAlign: 'center', marginBottom: 36 }}>
+              <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                style={{ fontSize: 'clamp(26px, 6vw, 42px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.1, color: '#F5F5F7', marginBottom: 8 }}>
+                {repurposeResult.object}
+              </motion.h1>
+              <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                style={{ fontSize: 14, color: '#666' }}>
+                Material: {repurposeResult.material}
+              </motion.p>
+            </div>
+
+            {/* Repurpose Ideas */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+              {repurposeResult.ideas.map((idea, index) => (
+                <motion.div
+                  key={idea.type}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.1 }}
+                  style={{
+                    background: '#0C0C10',
+                    borderRadius: 16,
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Idea Header */}
+                  <div style={{
+                    padding: '16px 18px',
+                    background: idea.type === 'easy' ? 'rgba(0,200,150,0.08)' : idea.type === 'useful' ? 'rgba(255,107,53,0.08)' : 'rgba(184,102,214,0.08)',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        color: idea.type === 'easy' ? '#00C896' : idea.type === 'useful' ? '#FF6B35' : '#B866D6',
+                      }}>
+                        {idea.type}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#444' }}>{idea.time}</span>
+                    </div>
+                    <h3 style={{ fontSize: 18, fontWeight: 600, color: '#F5F5F7', marginBottom: 4 }}>{idea.title}</h3>
+                    <p style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>{idea.description}</p>
+                    <div style={{ marginTop: 10, display: 'flex', gap: 6 }}>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: 100,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        background: idea.difficulty === 'Easy' ? 'rgba(0,200,150,0.15)' : idea.difficulty === 'Medium' ? 'rgba(255,193,7,0.15)' : 'rgba(255,68,68,0.15)',
+                        color: idea.difficulty === 'Easy' ? '#00C896' : idea.difficulty === 'Medium' ? '#FFC107' : '#FF4444',
+                      }}>
+                        {idea.difficulty}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Materials */}
+                  <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#444', marginBottom: 10 }}>Materials needed</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {idea.materials.map((material, i) => (
+                        <span key={i} style={{ fontSize: 12, color: '#777', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: 8 }}>
+                          {material}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Steps */}
+                  <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#444', marginBottom: 10 }}>Steps</p>
+                    <ol style={{ margin: 0, paddingLeft: 18 }}>
+                      {idea.steps.map((step, i) => (
+                        <li key={i} style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 6 }}>{step}</li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  {/* Safety */}
+                  {idea.safety.length > 0 && (
+                    <div style={{ padding: '16px 18px', background: 'rgba(255,68,68,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <AlertTriangle style={{ width: 14, height: 14, color: '#FF4444' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#FF4444' }}>Safety</span>
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {idea.safety.map((safety, i) => (
+                          <li key={i} style={{ fontSize: 12, color: '#888', lineHeight: 1.5, marginBottom: 4 }}>{safety}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Recycling Options */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              style={{
+                background: repurposeResult.recyclingOptions.canRecycle ? 'rgba(0,200,150,0.05)' : 'rgba(255,193,7,0.05)',
+                borderRadius: 14,
+                border: `1px solid ${repurposeResult.recyclingOptions.canRecycle ? 'rgba(0,200,150,0.15)' : 'rgba(255,193,7,0.15)'}`,
+                padding: '18px',
+                marginBottom: 24,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: repurposeResult.recyclingOptions.canRecycle ? 'rgba(0,200,150,0.15)' : 'rgba(255,193,7,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  {repurposeResult.recyclingOptions.canRecycle ? (
+                    <Check style={{ width: 14, height: 14, color: '#00C896' }} />
+                  ) : (
+                    <X style={{ width: 14, height: 14, color: '#FFC107' }} />
+                  )}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#F5F5F7' }}>
+                  {repurposeResult.recyclingOptions.canRecycle ? 'Recyclable' : 'Not curbside recyclable'}
+                </span>
+              </div>
+              <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 12 }}>
+                {repurposeResult.recyclingOptions.howToRecycle}
+              </p>
+              {repurposeResult.recyclingOptions.alternatives.length > 0 && (
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: '#555', marginBottom: 8 }}>Alternatives:</p>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {repurposeResult.recyclingOptions.alternatives.map((alt, i) => (
+                      <li key={i} style={{ fontSize: 12, color: '#666', lineHeight: 1.5 }}>{alt}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Save to Projects */}
+            <motion.button
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+              onClick={() => {
+                setSavedToProjects(true);
+                // TODO: Actually save to backend
+              }}
+              disabled={savedToProjects}
+              style={{
+                width: '100%',
+                padding: '16px',
+                borderRadius: 12,
+                background: savedToProjects ? 'rgba(0,200,150,0.15)' : '#FF6B35',
+                border: 'none',
+                color: savedToProjects ? '#00C896' : '#fff',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '0.03em',
+                cursor: savedToProjects ? 'default' : 'pointer',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'all 0.15s',
+              }}
+            >
+              {savedToProjects ? (
+                <>
+                  <Check style={{ width: 16, height: 16 }} />
+                  Saved to My Projects
+                </>
+              ) : (
+                <>
+                  <Bookmark style={{ width: 16, height: 16 }} />
+                  Save to My Projects
+                </>
+              )}
+            </motion.button>
 
           </motion.div>
         )}
