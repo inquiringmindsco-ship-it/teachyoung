@@ -1179,16 +1179,16 @@ export default function GeneratePage() {
               transition={{ delay: 0.55 }}
               onClick={() => {
                 setSavedToProjects(true);
-                // TODO: Actually save to backend
+                alert('Projects feature coming soon!');
               }}
               disabled={savedToProjects}
               style={{
                 width: '100%',
                 padding: '16px',
                 borderRadius: 12,
-                background: savedToProjects ? 'rgba(0,200,150,0.15)' : '#FF6B35',
+                background: savedToProjects ? 'rgba(255,255,255,0.08)' : '#FF6B35',
                 border: 'none',
-                color: savedToProjects ? '#00C896' : '#fff',
+                color: savedToProjects ? '#666' : '#fff',
                 fontSize: 14,
                 fontWeight: 700,
                 letterSpacing: '0.03em',
@@ -1203,8 +1203,8 @@ export default function GeneratePage() {
             >
               {savedToProjects ? (
                 <>
-                  <Check style={{ width: 16, height: 16 }} />
-                  Saved to My Projects
+                  <Bookmark style={{ width: 16, height: 16 }} />
+                  Coming Soon
                 </>
               ) : (
                 <>

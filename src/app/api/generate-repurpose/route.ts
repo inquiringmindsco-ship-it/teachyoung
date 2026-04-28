@@ -1,5 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const MOCK_ENABLED = process.env.OVERSTOOD_MOCK_AI === 'true';
+
+const MOCK_REPURPOSE = {
+  object: "plastic bottle",
+  material: "PET plastic (polyethylene terephthalate)",
+  ideas: [
+    {
+      type: "easy",
+      title: "Self-watering planter",
+      description: "Cut the bottle in half, flip the top upside down into the base, and fill with water. The soil wicks moisture up through the neck.",
+      difficulty: "Easy",
+      time: "5 minutes",
+      materials: ["Plastic bottle", "Scissors", "Potting soil", "Small plant"],
+      steps: [
+        "Cut bottle in half around the middle",
+        "Poke a small hole in the cap",
+        "Flip top half upside down into bottom half",
+        "Fill neck with soil and plant",
+        "Add water to base reservoir"
+      ],
+      safety: ["Wear eye protection when cutting", "Adult supervision recommended for children"]
+    },
+    {
+      type: "useful",
+      title: "Drip irrigation for garden",
+      description: "Poke tiny holes in bottle, bury it near plant roots, and fill with water. Creates slow-release watering system for dry spells.",
+      difficulty: "Easy",
+      time: "10 minutes",
+      materials: ["Large plastic bottle", "Small nail or drill", "Duct tape (optional)"],
+      steps: [
+        "Poke 2-3 tiny holes in bottle sides near bottom",
+        "Dig hole next to plant roots",
+        "Bury bottle with cap removed, neck up",
+        "Fill with water and check flow rate",
+        "Refill as needed"
+      ],
+      safety: ["Wash hands after handling soil", "Keep cap away from small children"]
+    },
+    {
+      type: "creative",
+      title: "Vertical herb garden wall",
+      description: "Cut bottles horizontally, mount to fence or wall, and create cascading herb planters. Labels can be written on bottles with marker.",
+      difficulty: "Medium",
+      time: "1 hour",
+      materials: ["6-10 plastic bottles", "Heavy duty scissors", "Screws and washers", "Drill", "Potting soil", "Herb seedlings"],
+      steps: [
+        "Remove labels and clean bottles thoroughly",
+        "Cut rectangular openings on one side",
+        "Drill drainage holes in bottom",
+        "Mount bottles staggered on fence with screws",
+        "Fill with soil and plant herbs",
+        "Water top bottles and let drain to lower ones"
+      ],
+      safety: ["Wear gloves when handling drill", "Ensure wall mount can hold weight of wet soil", "Check for sharp edges after cutting"]
+    }
+  ],
+  recyclingOptions: {
+    canRecycle: true,
+    howToRecycle: "Rinse bottle, remove cap (recycle separately), and flatten to save space. Check local rules — some areas require caps on, others off.",
+    alternatives: [
+      "Drop off at grocery store collection bins",
+      "Terracycle for hard-to-recycle plastics",
+      "Local maker spaces for craft material donations"
+    ]
+  }
+};
+
 const REPURPOSE_SYSTEM_PROMPT = `You are a creative reuse expert. When someone shows you an object, you suggest practical ways to repurpose, upcycle, or recycle it. You focus on real, doable ideas — not fantasy projects that require professional tools or weeks of work.
 
 Respond as valid JSON with this EXACT structure:
@@ -57,6 +124,12 @@ export interface RepurposeResult {
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY;
+
+  // MOCK MODE: Return mock response without hitting OpenAI
+  if (MOCK_ENABLED) {
+    console.log('OVERSTOOD_MOCK_AI enabled — returning mock response for /api/generate-repurpose');
+    return NextResponse.json({ result: MOCK_REPURPOSE });
+  }
 
   if (!apiKey) {
     return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });

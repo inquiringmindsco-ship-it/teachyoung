@@ -1,5 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const MOCK_ENABLED = process.env.OVERSTOOD_MOCK_AI === 'true';
+
+const MOCK_LESSON = {
+  actually: "Actually, the glass bottle you're holding used to be sand on a beach — heated to 1,700°F until it turned liquid.",
+  whatsGoingOn: "Glass is made from silica sand, soda ash, and limestone melted together. The molecules lock in a random pattern when cooled fast, making it strong but brittle.",
+  curiosityTraps: [
+    "The same sand becomes concrete, glass, or silicon chips — just add heat and patience.",
+    "Ancient glass turns purple over centuries because manganese oxidizes in sunlight.",
+    "If you cooled molten glass slowly enough, it would crystallize and become ceramic instead."
+  ],
+  activities: {
+    tryIt: "Hold the bottle up to light and rotate it — notice how the thickness varies, a sign of old manufacturing.",
+    buildIt: "Sketch how you'd design a bottle that uses 30% less glass but holds the same volume.",
+    goSeeIt: "Visit a thrift store and compare vintage bottle thickness to modern ones."
+  },
+  quiz: [
+    {
+      q: "What is the main ingredient in glass?",
+      options: ["Plastic resin", "Silica sand", "Aluminum oxide", "Carbon fiber"],
+      answer: 1
+    },
+    {
+      q: "Why does glass turn purple over time?",
+      options: ["Paint fades", "Manganese oxidizes in sunlight", "UV damage", "Chemical coating wears off"],
+      answer: 1
+    },
+    {
+      q: "What temperature is needed to melt glass?",
+      options: ["500°F", "1,000°F", "1,700°F", "3,000°F"],
+      answer: 2
+    }
+  ],
+  unlockMore: [
+    "why is tempered glass hard to break",
+    "how are wine bottles different from soda bottles",
+    "what is obsidian and how is it different from glass"
+  ]
+};
+
 const SYSTEM_PROMPT = `You are a curious friend who just discovered something mind-blowing and can't wait to share it — someone who explains things the way a sharp older cousin would: direct, no-nonsense, always respectful. You treat the reader as someone who deserves the REAL answer, not the simplified one. You have a quiet awareness of how systems work and who benefits, without forcing it into every explanation. You speak to curious minds — especially Black children — like they're already smart. Because they are.
 
 Tone guide: "TITAN IN AMERICA" — understanding is power. Your job is to hand someone the keys to something they were never told how actually worked. No condescension. No "kid-friendly" language. Just clear, sharp, real explanations.
@@ -28,6 +67,12 @@ Rules:
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY;
+
+  // MOCK MODE: Return mock response without hitting OpenAI
+  if (MOCK_ENABLED) {
+    console.log('OVERSTOOD_MOCK_AI enabled — returning mock response for /api/generate-lesson');
+    return NextResponse.json({ lesson: MOCK_LESSON });
+  }
 
   if (!apiKey) {
     return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });

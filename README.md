@@ -20,6 +20,27 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Local QA without API credits
+
+To test the app without OpenAI API quota:
+
+1. Copy `.env.example` to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Enable mock mode:
+   ```bash
+   OVERSTOOD_MOCK_AI=true
+   ```
+
+3. Run dev server:
+   ```bash
+   npm run dev
+   ```
+
+Mock mode returns realistic sample responses for both Learn and Repurpose modes without calling OpenAI. Console will log: `OVERSTOOD_MOCK_AI enabled — returning mock response`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
